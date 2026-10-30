@@ -24,6 +24,7 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 - Downloads: TAFL 64 MB, FCC 505 MB (zips read in place, never unzipped), OurAirports about 15 MB of CSV.
 - Keep the cache outside the repository.
 - About 1.5 minutes and 1.6 GB of memory (the FCC join).
+- A source that fails to build (a refused download) keeps its last published copy from data.ferritefw.dev, or is left out if there is none; the others still deploy.
 
 ## Output
 

@@ -32,9 +32,9 @@ jobs:
           top = json.load(open("out/index.json"))
           names = {s["source"]: s["rows"] for s in top["sources"]}
           print(names)
-          assert names.get("tafl", 0) > 100000, "TAFL looks short"
-          assert names.get("fcc", 0) > 500000, "FCC looks short"
-          assert names.get("airports", 0) > 15000, "Airports look short"
+          least = {"tafl": 100000, "fcc": 500000, "airports": 15000}  # a source that's there must look whole
+          for name, rows in names.items():
+              assert rows > least.get(name, 0), f"{name} looks short: {rows} rows"
           EOF
           du -sh out
       - uses: actions/upload-pages-artifact@v3
