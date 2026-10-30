@@ -27,17 +27,18 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 ## Output
 
 - `index.json`: build date and the sources (title, source date, licence, attribution, row and tile counts).
-- `<source>/index.json`: the same for one source, plus `tiles`: tile -> row count.
+- `<source>/index.json`: the same for one source, plus `format`, and `tiles`: tile -> row count.
 - Tiles are 4-character grid squares (`CN89.json`). A square over 6,000 rows (big cities) is published only as its 6-character subsquares (`CN89kg.json`) and listed in `split`.
   Empty subsquares have no file.
 - `<source>.zip`: the whole source in one download (its index and every tile), for apps that keep everything offline. The top-level `index.json` gives its size and SHA-256.
-- `<source>/<square>.json`: the rows in one 4-character Maidenhead square (`tafl/CN89.json`, `fcc/DM04.json`).
-- A row: `{"c": name, "l": [lat, lon], "f": kHz, "m": mode, "s": "m"}`.
-  - `c`: licensee, shortened to 16 characters.
-  - `l`: WGS84 degrees, 5 decimals.
-  - `f`: transmit frequency in kHz; half kHz kept (469.9875 MHz is `469987.5`).
-  - `m`: `nfm` (analog FM under 14 kHz), `fm` (16-20 kHz), `dig` (digital or data only); missing if unknown.
-  - `s`: `"m"` when the frequency is a mobile's (often a repeater input, or the centre of a mobile area); missing for bases, repeaters and fixed stations.
+- A tile (`format`: `columnar-1`) is columns, one entry per row, in latitude, longitude, frequency order:
+  - `n`: the tile's licensee names, each once, shortened to 16 characters.
+  - `c`: the row's name, as an index into `n`.
+  - `a`, `o`: latitude and longitude in 1/100,000 degree (WGS84), each the difference from the row before (the first from 0).
+  - `f`: transmit frequency in half kHz (469.9875 MHz is 939975), the difference from the row before.
+  - `m`: mode: 0 analog FM under 14 kHz (NFM), 1 analog FM 16-20 kHz, 2 digital or data only, 3 unknown.
+  - `s`: 1 when the frequency is a mobile's (often a repeater input, or the centre of a mobile area); 0 for bases, repeaters and fixed stations. Missing when every row is 0.
+- To read a tile: keep running sums of `a`, `o` and `f`; latitude = a / 1e5, longitude = o / 1e5, MHz = f / 2000.
 - Bands: 136-174 and 400-470 MHz.
 - Rows are unique by name, frequency and position.
 

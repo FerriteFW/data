@@ -261,6 +261,32 @@ class Rows:
         return out
 
 
+FORMAT = "columnar-1"
+MODES = {"nfm": 0, "fm": 1, "dig": 2}  # 3: unknown
+
+
+def columnar(rows):
+    """A tile as columns (README's Output): names once, then per row a name index and whole-number deltas.
+
+    Rows go in latitude, longitude, frequency order so the deltas stay small."""
+    names = sorted({r["c"] for r in rows})
+    ix = {n: i for i, n in enumerate(names)}
+    t = {"n": names, "c": [], "a": [], "o": [], "f": [], "m": [], "s": []}
+    pa = po = pf = 0
+    for r in sorted(rows, key=lambda r: (r["l"][0], r["l"][1], r["f"], r["c"])):
+        a, o, f = round(r["l"][0] * 1e5), round(r["l"][1] * 1e5), round(r["f"] * 2)
+        t["c"].append(ix[r["c"]])
+        t["a"].append(a - pa)
+        t["o"].append(o - po)
+        t["f"].append(f - pf)
+        t["m"].append(MODES.get(r.get("m"), 3))
+        t["s"].append(1 if r.get("s") else 0)
+        pa, po, pf = a, o, f
+    if not any(t["s"]):
+        del t["s"]
+    return t
+
+
 def write_source(out_dir, source, rows, meta):
     """Write out/<source>/<GRID>.json and out/<source>/index.json. Returns the index dict."""
     d = os.path.join(out_dir, source)
@@ -269,9 +295,10 @@ def write_source(out_dir, source, rows, meta):
     listing = {}
     for g in sorted(tiles):
         with open(os.path.join(d, g + ".json"), "w", encoding="utf-8") as f:
-            json.dump(tiles[g], f, separators=(",", ":"), ensure_ascii=False)
+            json.dump(columnar(tiles[g]), f, separators=(",", ":"), ensure_ascii=False)
         listing[g] = len(tiles[g])
     index = dict(meta)
+    index["format"] = FORMAT
     index["rows"] = sum(listing.values())
     index["tiles"] = listing
     index["split"] = sorted({g[:4] for g in listing if len(g) == 6})
