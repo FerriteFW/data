@@ -1,0 +1,51 @@
+name: Build and deploy
+
+on:
+  schedule:
+    - cron: "17 6 8 * *" # monthly, after ISED's early-month extract and a fresh FCC weekly file
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: python3 build.py --cache "$RUNNER_TEMP/cache" --out out --download
+      - name: Check output
+        run: |
+          python3 - <<'EOF'
+          import json
+          top = json.load(open("out/index.json"))
+          names = {s["source"]: s["rows"] for s in top["sources"]}
+          print(names)
+          assert names.get("tafl", 0) > 100000, "TAFL looks short"
+          assert names.get("fcc", 0) > 500000, "FCC looks short"
+          EOF
+          du -sh out
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
