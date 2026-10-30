@@ -12,6 +12,7 @@ Served at https://data.ferritefw.dev.
 - `build.py`: builds both into `out/`.
 - `.forgejo/workflows/publish.yml`: the monthly build, on Forgejo's runner at home (the FCC refuses GitHub's runners). Force-pushes `out/` to the `gh-pages` branch here.
 - `.github/workflows/pages.yml`: the same by hand on GitHub, as a fallback (Canada and airports refresh; the FCC keeps its last copy).
+- `landing.py`: writes the landing page (`index.html`) from the build's index.
 - `check.py`: both workflows' check that each source looks whole before publishing.
 
 ## Rebuild

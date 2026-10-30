@@ -14,6 +14,7 @@ import urllib.request
 import zipfile
 
 import common
+import landing
 from airports import build as airports
 from fcc import build as fcc
 from tafl import build as tafl
@@ -92,6 +93,7 @@ def main():
             | {"index": f"{name}/index.json", "tiles": len(index["tiles"])} | bundle)
     with open(os.path.join(a.out, "index.json"), "w", encoding="utf-8") as f:
         json.dump(top, f, separators=(",", ":"), ensure_ascii=False)
+    landing.write(a.out, top)
     shutil.copy(os.path.join(ROOT, "CNAME"), os.path.join(a.out, "CNAME"))
     open(os.path.join(a.out, ".nojekyll"), "w").close()
     print(f"Wrote {a.out}/index.json", flush=True)
