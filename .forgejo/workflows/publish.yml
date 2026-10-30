@@ -1,0 +1,44 @@
+name: Build and publish
+# The main monthly build, on Forgejo's runner at home: the FCC refuses its downloads to GitHub's runners (HTTP 403,
+# Oct 30, 2026). Builds every source and force-pushes out/ to the gh-pages branch on GitHub (one fresh commit each
+# time, so the history never grows), which GitHub Pages serves as data.ferritefw.dev.
+# Needs the Forgejo secret GH_PAGES_TOKEN: a fine-grained GitHub token for FerriteFW/data, Contents read and write.
+# Without it the build still runs and says it didn't publish.
+on:
+  schedule:
+    - cron: "17 6 8 * *" # the 8th: after ISED's early-month extract and a fresh FCC weekly file
+  workflow_dispatch:
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: docker
+    container:
+      image: node:20-bookworm # checkout needs node
+    timeout-minutes: 90
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Packages
+        run: |
+          apt-get update -q
+          apt-get install -y -q --no-install-recommends python3 git
+      - name: Build
+        run: python3 build.py --cache /tmp/cache --out out --download
+      - name: Check output
+        run: python3 check.py out
+      - name: Publish to gh-pages
+        env:
+          GH_PAGES_TOKEN: ${{ secrets.GH_PAGES_TOKEN }}
+        run: |
+          if [ -z "$GH_PAGES_TOKEN" ]; then
+            echo "::warning::GH_PAGES_TOKEN isn't set: built, not published"
+            exit 0
+          fi
+          cd out
+          git init -q -b gh-pages
+          git add -A
+          git -c user.name="Ferrite data" -c user.email="data@ferritefw.dev" commit -qm "Data build $(date -u +%F)"
+          git push -q --force "https://x-access-token:${GH_PAGES_TOKEN}@github.com/FerriteFW/data.git" gh-pages

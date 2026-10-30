@@ -10,7 +10,9 @@ Served at https://data.ferritefw.dev.
 - `airports/`: the world's airport frequencies (108-137 MHz), from OurAirports. Public domain ([airports/LICENCE-DATA.md](airports/LICENCE-DATA.md)).
 - `common/`: shared code: bands, name shortening, emission modes, tiles.
 - `build.py`: builds both into `out/`.
-- `.github/workflows/pages.yml`: builds monthly (and by hand) and deploys `out/` to GitHub Pages.
+- `.forgejo/workflows/publish.yml`: the monthly build, on Forgejo's runner at home (the FCC refuses GitHub's runners). Force-pushes `out/` to the `gh-pages` branch here.
+- `.github/workflows/pages.yml`: the same by hand on GitHub, as a fallback (Canada and airports refresh; the FCC keeps its last copy).
+- `check.py`: both workflows' check that each source looks whole before publishing.
 
 ## Rebuild
 
@@ -48,7 +50,8 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 
 ## Hosting
 
-- GitHub Pages with the custom domain `data.ferritefw.dev` (`CNAME`).
+- GitHub Pages from the `gh-pages` branch (one fresh commit per build), custom domain `data.ferritefw.dev` (`CNAME`).
+- The repository is on GitHub (FerriteFW/data) and Forgejo (ferrite/data); push to both.
 - Pages sends `Access-Control-Allow-Origin: *`, so any site can fetch the tiles.
 - Wanted later, if a proxy (e.g. Cloudflare) goes in front: allow only `https://console.ferritefw.dev`, the Tauri app (`tauri://localhost`, `http://tauri.localhost`) and `localhost` for development.
 - A failed build deploys nothing: the last good copy stays up.
