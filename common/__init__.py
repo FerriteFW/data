@@ -3,7 +3,7 @@
 import json
 import os
 import re
-import urllib.request
+import subprocess
 
 # Ferrite's bands, MHz (the same as Console's TAFL tab).
 BANDS = ((136.0, 174.0), (400.0, 470.0))
@@ -20,18 +20,14 @@ def khz(mhz):
 
 
 def download(url, path, force=False):
-    """Fetch url to path unless it is already there. Returns the path."""
+    """Fetch url to path unless it is already there. Returns the path.
+
+    Uses curl as itself: the FCC's servers refuse Python's urllib (HTTP 403) but serve curl."""
     if force or not os.path.exists(path):
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         print(f"Downloading {url}", flush=True)
         tmp = path + ".part"
-        req = urllib.request.Request(url, headers={"User-Agent": "ferrite-data (https://data.ferritefw.dev)"})
-        with urllib.request.urlopen(req) as r, open(tmp, "wb") as f:
-            while True:
-                b = r.read(1 << 20)
-                if not b:
-                    break
-                f.write(b)
+        subprocess.run(["curl", "-fsSL", "--retry", "3", "-o", tmp, url], check=True)
         os.replace(tmp, path)
     else:
         print(f"Using cached {path}", flush=True)

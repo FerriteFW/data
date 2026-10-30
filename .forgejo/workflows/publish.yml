@@ -24,7 +24,7 @@ jobs:
       - name: Packages
         run: |
           apt-get update -q
-          apt-get install -y -q --no-install-recommends python3 git
+          apt-get install -y -q --no-install-recommends python3 git curl
       - name: Build
         run: python3 build.py --cache /tmp/cache --out out --download
       - name: Check output
