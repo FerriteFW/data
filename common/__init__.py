@@ -213,6 +213,18 @@ def grid4(lat, lon):
             + str(int(lon % 20 // 2)) + str(int(lat % 10)))
 
 
+def grid6(lat, lon):
+    """6-character Maidenhead subsquare ('CN89kg'): the square split 24 x 24, about 6 x 4.6 km here."""
+    g = grid4(lat, lon)
+    lon = min(max(lon + 180.0, 0.0), 359.999999)
+    lat = min(max(lat + 90.0, 0.0), 179.999999)
+    return g + chr(97 + int(lon % 2 * 12)) + chr(97 + int(lat % 1 * 24))
+
+
+# A square with more rows than this (big cities) is published as its subsquares instead.
+SPLIT = 6000
+
+
 class Rows:
     """Deduplicated rows: one per (name, kHz, lat, lon)."""
 
@@ -241,6 +253,9 @@ class Rows:
             if mobile:
                 r["s"] = "m"
             out.setdefault(grid4(lat, lon), []).append(r)
+        for g in [g for g, rows in out.items() if len(rows) > SPLIT]:
+            for r in out.pop(g):
+                out.setdefault(grid6(*r["l"]), []).append(r)
         for rows in out.values():
             rows.sort(key=lambda r: (r["c"], r["f"], r["l"]))
         return out
@@ -259,6 +274,7 @@ def write_source(out_dir, source, rows, meta):
     index = dict(meta)
     index["rows"] = sum(listing.values())
     index["tiles"] = listing
+    index["split"] = sorted({g[:4] for g in listing if len(g) == 6})
     with open(os.path.join(d, "index.json"), "w", encoding="utf-8") as f:
         json.dump(index, f, separators=(",", ":"), ensure_ascii=False, indent=None)
     print(f"{source}: {index['rows']} rows in {len(listing)} tiles", flush=True)
