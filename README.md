@@ -7,6 +7,7 @@ Served at https://data.ferritefw.dev.
 
 - `tafl/`: Canada, from ISED's Spectrum Management System extract (the TAFL). Licence: Open Government Licence – Canada ([tafl/LICENCE-DATA.md](tafl/LICENCE-DATA.md)).
 - `fcc/`: US, from the FCC's ULS weekly files (Land Mobile – Private and Commercial). Public domain in the US ([fcc/LICENCE-DATA.md](fcc/LICENCE-DATA.md)).
+- `airports/`: the world's airport frequencies (108-137 MHz), from OurAirports. Public domain ([airports/LICENCE-DATA.md](airports/LICENCE-DATA.md)).
 - `common/`: shared code: bands, name shortening, emission modes, tiles.
 - `build.py`: builds both into `out/`.
 - `.github/workflows/pages.yml`: builds monthly (and by hand) and deploys `out/` to GitHub Pages.
@@ -20,15 +21,16 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 ```
 
 - Python 3.9 or newer, standard library only.
-- Downloads: TAFL 64 MB, FCC 505 MB. The zips are read in place, never unzipped.
+- Downloads: TAFL 64 MB, FCC 505 MB (zips read in place, never unzipped), OurAirports about 15 MB of CSV.
 - Keep the cache outside the repository.
 - About 1.5 minutes and 1.6 GB of memory (the FCC join).
 
 ## Output
 
 - `index.json`: build date and the sources (title, source date, licence, attribution, row and tile counts).
-- `<source>/index.json`: the same for one source, plus `format`, and `tiles`: tile -> row count.
-- Tiles are 4-character grid squares (`CN89.json`). A square over 6,000 rows (big cities) is published only as its 6-character subsquares (`CN89kg.json`) and listed in `split`.
+- `<source>/index.json`: the same for one source, plus `format`, `level` (2 or 4: the tiles' grid size), and `tiles`: tile -> row count.
+- Airports' tiles are 2-character fields (`airports/CN.json`, 20 x 10 degrees): the data is small.
+- The other sources' tiles are 4-character grid squares (`CN89.json`). A square over 6,000 rows (big cities) is published only as its 6-character subsquares (`CN89kg.json`) and listed in `split`.
   Empty subsquares have no file.
 - `<source>.zip`: the whole source in one download (its index and every tile), for apps that keep everything offline. The top-level `index.json` gives its size and SHA-256.
 - A tile (`format`: `columnar-1`) is columns, one entry per row, in latitude, longitude, frequency order:
@@ -36,10 +38,11 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
   - `c`: the row's name, as an index into `n`.
   - `a`, `o`: latitude and longitude in 1/100,000 degree (WGS84), each the difference from the row before (the first from 0).
   - `f`: transmit frequency in half kHz (469.9875 MHz is 939975), the difference from the row before.
-  - `m`: mode: 0 analog FM under 14 kHz (NFM), 1 analog FM 16-20 kHz, 2 digital or data only, 3 unknown.
+  - `m`: mode: 0 analog FM under 14 kHz (NFM), 1 analog FM 16-20 kHz, 2 digital or data only, 3 unknown. Missing when every row is unknown (airports: airband is AM).
   - `s`: 1 when the frequency is a mobile's (often a repeater input, or the centre of a mobile area); 0 for bases, repeaters and fixed stations. Missing when every row is 0.
+  - `tn`, `t`: the frequency's use (airports: `TWR`, `GND`, `ATIS`, `CTAF`, ...), as OurAirports writes it: `tn` lists the tile's uses once, `t` indexes it (-1: none). Missing when a source has none.
 - To read a tile: keep running sums of `a`, `o` and `f`; latitude = a / 1e5, longitude = o / 1e5, MHz = f / 2000.
-- Bands: 136-174 and 400-470 MHz.
+- Bands: 136-174 and 400-470 MHz; airports 108-137 MHz.
 - Rows are unique by name, frequency and position.
 
 ## Hosting

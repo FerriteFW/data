@@ -34,6 +34,7 @@ jobs:
           print(names)
           assert names.get("tafl", 0) > 100000, "TAFL looks short"
           assert names.get("fcc", 0) > 500000, "FCC looks short"
+          assert names.get("airports", 0) > 15000, "Airports look short"
           EOF
           du -sh out
       - uses: actions/upload-pages-artifact@v3

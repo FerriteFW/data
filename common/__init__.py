@@ -205,6 +205,11 @@ def is_generic_number_name(name, num_digits=4):
 # -------------------------------------------------------------------------
 # Tiles
 # -------------------------------------------------------------------------
+def grid2(lat, lon):
+    """2-character Maidenhead field ('CN' for southern B.C. and Washington): 20 x 10 degrees."""
+    return grid4(lat, lon)[:2]
+
+
 def grid4(lat, lon):
     """4-character Maidenhead square ('CN89' for Vancouver)."""
     lon = min(max(lon + 180.0, 0.0), 359.999999)
@@ -231,29 +236,34 @@ class Rows:
     def __init__(self):
         self.rows = {}
 
-    def add(self, name, lat, lon, f, m=None, mobile=False):
+    def add(self, name, lat, lon, f, m=None, mobile=False, t=None):
         lat, lon = round(lat, 5), round(lon, 5)
         key = (name, f, lat, lon)
         old = self.rows.get(key)
         if old is None:
-            self.rows[key] = [m, mobile]
+            self.rows[key] = [m, mobile, t]
         else:
             old[0] = merge_mode(old[0], m)
             old[1] = old[1] and mobile  # a base listing beats a mobile one
+            old[2] = old[2] or t
 
     def __len__(self):
         return len(self.rows)
 
-    def tiles(self):
+    def tiles(self, level=4):
+        """Rows by tile: 4-character squares (big ones split into subsquares), or 2-character fields."""
+        cell = grid2 if level == 2 else grid4
         out = {}
-        for (name, f, lat, lon), (m, mobile) in self.rows.items():
+        for (name, f, lat, lon), (m, mobile, t) in self.rows.items():
             r = {"c": name, "l": [lat, lon], "f": f}
             if m:
                 r["m"] = m
             if mobile:
                 r["s"] = "m"
-            out.setdefault(grid4(lat, lon), []).append(r)
-        for g in [g for g, rows in out.items() if len(rows) > SPLIT]:
+            if t:
+                r["t"] = t
+            out.setdefault(cell(lat, lon), []).append(r)
+        for g in [g for g, rows in out.items() if level == 4 and len(rows) > SPLIT]:
             for r in out.pop(g):
                 out.setdefault(grid6(*r["l"]), []).append(r)
         for rows in out.values():
@@ -271,7 +281,9 @@ def columnar(rows):
     Rows go in latitude, longitude, frequency order so the deltas stay small."""
     names = sorted({r["c"] for r in rows})
     ix = {n: i for i, n in enumerate(names)}
-    t = {"n": names, "c": [], "a": [], "o": [], "f": [], "m": [], "s": []}
+    types = sorted({r["t"] for r in rows if r.get("t")})
+    tx = {n: i for i, n in enumerate(types)}
+    t = {"n": names, "c": [], "a": [], "o": [], "f": [], "m": [], "s": [], "tn": types, "t": []}
     pa = po = pf = 0
     for r in sorted(rows, key=lambda r: (r["l"][0], r["l"][1], r["f"], r["c"])):
         a, o, f = round(r["l"][0] * 1e5), round(r["l"][1] * 1e5), round(r["f"] * 2)
@@ -281,17 +293,22 @@ def columnar(rows):
         t["f"].append(f - pf)
         t["m"].append(MODES.get(r.get("m"), 3))
         t["s"].append(1 if r.get("s") else 0)
+        t["t"].append(tx.get(r.get("t"), -1))
         pa, po, pf = a, o, f
     if not any(t["s"]):
         del t["s"]
+    if all(m == 3 for m in t["m"]):
+        del t["m"]
+    if not types:
+        del t["tn"], t["t"]
     return t
 
 
-def write_source(out_dir, source, rows, meta):
+def write_source(out_dir, source, rows, meta, level=4):
     """Write out/<source>/<GRID>.json and out/<source>/index.json. Returns the index dict."""
     d = os.path.join(out_dir, source)
     os.makedirs(d, exist_ok=True)
-    tiles = rows.tiles()
+    tiles = rows.tiles(level)
     listing = {}
     for g in sorted(tiles):
         with open(os.path.join(d, g + ".json"), "w", encoding="utf-8") as f:
@@ -299,6 +316,7 @@ def write_source(out_dir, source, rows, meta):
         listing[g] = len(tiles[g])
     index = dict(meta)
     index["format"] = FORMAT
+    index["level"] = level
     index["rows"] = sum(listing.values())
     index["tiles"] = listing
     index["split"] = sorted({g[:4] for g in listing if len(g) == 6})

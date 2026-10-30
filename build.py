@@ -1,6 +1,6 @@
 """Build every source into out/: per-source tiles and index.json, a top-level index.json, CNAME.
 
-python3 build.py --cache DIR [--out out] [--download] [--only tafl|fcc]
+python3 build.py --cache DIR [--out out] [--download] [--only tafl|fcc|airports]
 """
 
 import argparse
@@ -12,10 +12,11 @@ import shutil
 import zipfile
 
 import common
+from airports import build as airports
 from fcc import build as fcc
 from tafl import build as tafl
 
-SOURCES = {"tafl": tafl, "fcc": fcc}
+SOURCES = {"tafl": tafl, "fcc": fcc, "airports": airports}
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -47,7 +48,7 @@ def main():
         shutil.rmtree(os.path.join(a.out, name), ignore_errors=True)
         rows, meta = SOURCES[name].build(a.cache, a.download)
         meta["build_date"] = today
-        index = common.write_source(a.out, name, rows, meta)
+        index = common.write_source(a.out, name, rows, meta, getattr(SOURCES[name], "LEVEL", 4))
         bundle = write_bundle(a.out, name)
         top["sources"].append({k: index[k] for k in (
             "source", "title", "source_date", "licence", "licence_url", "attribution", "rows")}
