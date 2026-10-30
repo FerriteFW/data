@@ -30,6 +30,7 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 - `<source>/index.json`: the same for one source, plus `tiles`: tile -> row count.
 - Tiles are 4-character grid squares (`CN89.json`). A square over 6,000 rows (big cities) is published only as its 6-character subsquares (`CN89kg.json`) and listed in `split`.
   Empty subsquares have no file.
+- `<source>.zip`: the whole source in one download (its index and every tile), for apps that keep everything offline. The top-level `index.json` gives its size and SHA-256.
 - `<source>/<square>.json`: the rows in one 4-character Maidenhead square (`tafl/CN89.json`, `fcc/DM04.json`).
 - A row: `{"c": name, "l": [lat, lon], "f": kHz, "m": mode, "s": "m"}`.
   - `c`: licensee, shortened to 16 characters.
