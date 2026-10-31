@@ -2,7 +2,7 @@
 
 Run from the repository root: python3 -m tafl.build --cache DIR --out out [--download]
 
-Keeps granted transmit records in 136-174 and 400-470 MHz with coordinates.
+Keeps granted transmit records in 136-174 and 400-470 MHz with coordinates; digital-only ones are left out.
 Column numbers are the field codes in ISED's field description
 (https://www.ic.gc.ca/engineering/SMS_TAFL_Files/tafl_description_ltaf.pdf); the CSV puts
 TX/RX in column 0, so code N is column N.
@@ -77,7 +77,8 @@ def build(cache, download=False):
                 skipped["coords"] += 1
                 continue
             rows.add(common.smart_name(licensee), lat, lon, common.khz(mhz),
-                     row_mode(row), row[C_ITU_CLASS] in MOBILE_CLASSES)
+                     row_mode(row), row[C_ITU_CLASS] in MOBILE_CLASSES, k=common.category(licensee))
+    skipped["digital"] = rows.drop_digital()
     print(f"tafl: skipped {skipped}", flush=True)
     meta = {
         "source": "tafl",

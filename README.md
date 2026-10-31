@@ -8,7 +8,7 @@ Served at https://data.ferritefw.dev.
 - `tafl/`: Canada, from ISED's Spectrum Management System extract (the TAFL). Licence: Open Government Licence – Canada ([tafl/LICENCE-DATA.md](tafl/LICENCE-DATA.md)).
 - `fcc/`: US, from the FCC's ULS weekly files (Land Mobile – Private and Commercial). Public domain in the US ([fcc/LICENCE-DATA.md](fcc/LICENCE-DATA.md)).
 - `airports/`: the world's airport frequencies (108-137 MHz), from OurAirports. Public domain ([airports/LICENCE-DATA.md](airports/LICENCE-DATA.md)).
-- `common/`: shared code: bands, name shortening, emission modes, tiles.
+- `common/`: shared code: bands, name shortening, emission modes, categories, tiles. Tests: `python3 -m unittest`.
 - `build.py`: builds both into `out/`.
 - `.forgejo/workflows/publish.yml`: the monthly build, on Forgejo's runner at home (the FCC refuses GitHub's runners). Force-pushes `out/` to the `gh-pages` branch here.
 - `.github/workflows/pages.yml`: the same by hand on GitHub, as a fallback (Canada and airports refresh; the FCC keeps its last copy).
@@ -42,8 +42,12 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
   - `c`: the row's name, as an index into `n`.
   - `a`, `o`: latitude and longitude in 1/100,000 degree (WGS84), each the difference from the row before (the first from 0).
   - `f`: transmit frequency in half kHz (469.9875 MHz is 939975), the difference from the row before.
-  - `m`: mode: 0 analog FM under 14 kHz (NFM), 1 analog FM 16-20 kHz, 2 digital or data only, 3 unknown. Missing when every row is unknown (airports: airband is AM).
+  - `m`: mode: 0 analog FM under 14 kHz (NFM), 1 analog FM 16-20 kHz, 3 unknown. Missing when every row is unknown (airports: airband is AM).
+    2 (digital or data only) is reserved: digital-only licences are left out, as Ferrite has no digital modes.
   - `s`: 1 when the frequency is a mobile's (often a repeater input, or the centre of a mobile area); 0 for bases, repeaters and fixed stations. Missing when every row is 0.
+  - `k`: the licensee's category: 0 business or other, 1 public safety, 2 transit and rail, 3 utilities, 4 marine and ports, 5 schools, 6 government.
+    From the FCC radio service where it decides (the Public Safety Pool), else keywords in the licensee's full name (`common.category`).
+    Missing when every row is 0 (airports never have it).
   - `tn`, `t`: the frequency's use (airports: `TWR`, `GND`, `ATIS`, `CTAF`, ...), as OurAirports writes it: `tn` lists the tile's uses once, `t` indexes it (-1: none). Missing when a source has none.
 - To read a tile: keep running sums of `a`, `o` and `f`; latitude = a / 1e5, longitude = o / 1e5, MHz = f / 2000.
 - Bands: 136-174 and 400-470 MHz; airports 108-137 MHz.

@@ -4,6 +4,7 @@ import json
 import os
 import re
 import subprocess
+import unicodedata
 
 # Ferrite's bands, MHz (the same as Console's TAFL tab).
 BANDS = ((136.0, 174.0), (400.0, 470.0))
@@ -199,6 +200,77 @@ def is_generic_number_name(name, num_digits=4):
 
 
 # -------------------------------------------------------------------------
+# Category (the tiles' k column)
+# -------------------------------------------------------------------------
+BUSINESS, PUBLIC_SAFETY, TRANSIT, UTILITIES, MARINE, SCHOOLS, GOVERNMENT = range(7)
+CATEGORY_NAMES = ("business", "public safety", "transit", "utilities", "marine", "schools", "government")
+
+# FCC radio service codes that decide on their own: the Public Safety Pool, conventional and trunked.
+# (The 700/800 MHz public-safety codes, GE/YE/SG/SY, are outside our bands.) Every other service, and the TAFL,
+# which has none, goes by the licensee's name.
+SERVICE_CATEGORY = {"PW": PUBLIC_SAFETY, "YW": PUBLIC_SAFETY}
+
+# Whole words or phrases in the licensee's full name (lower case, accents and punctuation gone; a trailing * is
+# any ending: fortis* takes FortisBC), tried in this order: the first category with a match wins. Government
+# comes after the specific ones ("City of Vancouver Fire" is public safety) and before marine ("City of Port
+# Moody" isn't a port).
+CATEGORY_WORDS = (
+    (PUBLIC_SAFETY, (
+        "police", "fire", "wildfire", "sheriff", "sheriffs", "ems", "ambulance", "paramedic", "paramedics",
+        "rcmp", "911", "e comm", "emergency", "rescue",
+        "incendie", "incendies", "pompiers", "securite civile",
+    )),
+    (TRANSIT, (
+        "transit", "translink", "rail", "railway", "railroad", "bnsf", "amtrak", "cn rail", "cpkc",
+        "canadian pacific", "bus", "buslines",
+    )),
+    (UTILITIES, (
+        "hydro", "electric", "power", "gas", "water", "utility", "utilities", "fortis*", "pud",
+    )),
+    (SCHOOLS, (
+        "school", "schools", "sd", "university", "college", "commission scolaire", "ecole", "universite",
+    )),
+    (GOVERNMENT, (
+        "city of", "county", "town of", "township", "municipality", "district of", "village", "regional district",
+        "ministry", "state of", "province", "dept", "department", "government", "majesty",
+        "ville de", "municipalite", "ministere", "gouvernement",
+    )),
+    (MARINE, (
+        "port", "harbour", "harbor", "marine", "ferries", "ferry", "coast guard", "pilotage", "pilots",
+    )),
+)
+
+
+def _words(words):
+    """One pattern for a category's words, each matched whole."""
+    return re.compile(r"\b(?:" + "|".join(re.escape(w.rstrip("*")) + (r"\w*" if w.endswith("*") else "")
+                                         for w in words) + r")\b")
+
+
+_CATEGORY_RE = [(k, _words(words)) for k, words in CATEGORY_WORDS]
+
+
+def _plain(name):
+    """Lower case, no accents, punctuation as spaces: 'E-Comm 9-1-1' -> 'e comm 911'."""
+    s = unicodedata.normalize("NFKD", name.lower())
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = re.sub(r"(?<=\d)-(?=\d)", "", s)  # 9-1-1 -> 911
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", s).split())
+
+
+def category(name, service=None):
+    """The row's category code (README's Output, `k`) from the licensee's full name and, for the FCC, its
+    radio service code. 0 when nothing says otherwise."""
+    if service in SERVICE_CATEGORY:
+        return SERVICE_CATEGORY[service]
+    plain = _plain(name)
+    for k, pat in _CATEGORY_RE:
+        if pat.search(plain):
+            return k
+    return BUSINESS
+
+
+# -------------------------------------------------------------------------
 # Tiles
 # -------------------------------------------------------------------------
 def grid2(lat, lon):
@@ -232,26 +304,37 @@ class Rows:
     def __init__(self):
         self.rows = {}
 
-    def add(self, name, lat, lon, f, m=None, mobile=False, t=None):
+    def add(self, name, lat, lon, f, m=None, mobile=False, t=None, k=BUSINESS):
         lat, lon = round(lat, 5), round(lon, 5)
         key = (name, f, lat, lon)
         old = self.rows.get(key)
         if old is None:
-            self.rows[key] = [m, mobile, t]
+            self.rows[key] = [m, mobile, t, k]
         else:
             old[0] = merge_mode(old[0], m)
             old[1] = old[1] and mobile  # a base listing beats a mobile one
             old[2] = old[2] or t
+            old[3] = old[3] or k  # two licensees shortened alike: a category beats none
 
     def __len__(self):
         return len(self.rows)
+
+    def drop_digital(self):
+        """Leave out digital-only rows (Ferrite has no digital modes). Run after every add: a row's mode is only
+        settled once all its listings are in (analog beats digital). Returns how many went."""
+        dig = [key for key, (m, *_rest) in self.rows.items() if m == "dig"]
+        for key in dig:
+            del self.rows[key]
+        return len(dig)
 
     def tiles(self, level=4):
         """Rows by tile: 4-character squares (big ones split into subsquares), or 2-character fields."""
         cell = grid2 if level == 2 else grid4
         out = {}
-        for (name, f, lat, lon), (m, mobile, t) in self.rows.items():
+        for (name, f, lat, lon), (m, mobile, t, k) in self.rows.items():
             r = {"c": name, "l": [lat, lon], "f": f}
+            if k:
+                r["k"] = k
             if m:
                 r["m"] = m
             if mobile:
@@ -279,7 +362,7 @@ def columnar(rows):
     ix = {n: i for i, n in enumerate(names)}
     types = sorted({r["t"] for r in rows if r.get("t")})
     tx = {n: i for i, n in enumerate(types)}
-    t = {"n": names, "c": [], "a": [], "o": [], "f": [], "m": [], "s": [], "tn": types, "t": []}
+    t = {"n": names, "c": [], "a": [], "o": [], "f": [], "m": [], "s": [], "tn": types, "t": [], "k": []}
     pa = po = pf = 0
     for r in sorted(rows, key=lambda r: (r["l"][0], r["l"][1], r["f"], r["c"])):
         a, o, f = round(r["l"][0] * 1e5), round(r["l"][1] * 1e5), round(r["f"] * 2)
@@ -290,6 +373,7 @@ def columnar(rows):
         t["m"].append(MODES.get(r.get("m"), 3))
         t["s"].append(1 if r.get("s") else 0)
         t["t"].append(tx.get(r.get("t"), -1))
+        t["k"].append(r.get("k", BUSINESS))
         pa, po, pf = a, o, f
     if not any(t["s"]):
         del t["s"]
@@ -297,6 +381,8 @@ def columnar(rows):
         del t["m"]
     if not types:
         del t["tn"], t["t"]
+    if not any(t["k"]):
+        del t["k"]
     return t
 
 
@@ -306,7 +392,10 @@ def write_source(out_dir, source, rows, meta, level=4):
     os.makedirs(d, exist_ok=True)
     tiles = rows.tiles(level)
     listing = {}
+    cats = [0] * len(CATEGORY_NAMES)
     for g in sorted(tiles):
+        for r in tiles[g]:
+            cats[r.get("k", BUSINESS)] += 1
         with open(os.path.join(d, g + ".json"), "w", encoding="utf-8") as f:
             json.dump(columnar(tiles[g]), f, separators=(",", ":"), ensure_ascii=False)
         listing[g] = len(tiles[g])
@@ -319,4 +408,6 @@ def write_source(out_dir, source, rows, meta, level=4):
     with open(os.path.join(d, "index.json"), "w", encoding="utf-8") as f:
         json.dump(index, f, separators=(",", ":"), ensure_ascii=False, indent=None)
     print(f"{source}: {index['rows']} rows in {len(listing)} tiles", flush=True)
+    if any(cats[1:]):
+        print(f"{source}: categories " + ", ".join(f"{n} {c}" for n, c in zip(CATEGORY_NAMES, cats)), flush=True)
     return index

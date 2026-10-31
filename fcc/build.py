@@ -6,7 +6,7 @@ Reads l_LMpriv.zip (Land Mobile - Private: industrial/business, public safety) a
 l_LMcomm.zip (Land Mobile - Commercial: commercial and paging) in place, without unzipping.
 Joins HD (licence header: status), EN (licensee), LO (locations), FR (frequencies) and
 EM (emissions) on the unique system identifier, location number and antenna number.
-Keeps active licences, 136-174 and 400-470 MHz, at locations with coordinates.
+Keeps active licences, 136-174 and 400-470 MHz, at locations with coordinates; digital-only rows are left out.
 
 Field positions follow the FCC's ULS public access database definitions (pa_ddef);
 every table is pipe-separated with the record type in field 0.
@@ -101,7 +101,7 @@ def build_file(zpath, rows, stats):
             lat, lon = dms([r[i] for i in LO_LAT]), dms([r[i] for i in LO_LON])
             if lat is not None and lon is not None and not (lat == 0 and lon == 0):
                 locs[(r[LO_USI], r[LO_NUM])] = (lat, lon)
-    picked = {}  # (usi, loc, ant, freq key) -> (name, lat, lon, kHz, mobile)
+    picked = {}  # (usi, loc, ant, freq key) -> (name, lat, lon, kHz, mobile, category)
     for r in lines(z, "FR"):
         if len(r) <= FR_FREQ or r[FR_USI] not in active:
             continue
@@ -122,7 +122,8 @@ def build_file(zpath, rows, stats):
             continue
         mobile = r[FR_CLASS].upper().startswith("MO")
         key = (usi, r[FR_LOC], r[FR_ANT], freq_key(r[FR_FREQ]))
-        picked[key] = (common.smart_name(name), ll[0], ll[1], common.khz(mhz), mobile)
+        picked[key] = (common.smart_name(name), ll[0], ll[1], common.khz(mhz), mobile,
+                       common.category(name, active[usi]))
         stats["services"][active[usi]] = stats["services"].get(active[usi], 0) + 1
     emissions = {}
     for r in lines(z, "EM"):
@@ -131,8 +132,8 @@ def build_file(zpath, rows, stats):
         key = (r[EM_USI], r[EM_LOC], r[EM_ANT], freq_key(r[EM_FREQ]))
         if key in picked:
             emissions.setdefault(key, []).append(r[EM_CODE])
-    for key, (name, lat, lon, f, mobile) in picked.items():
-        rows.add(name, lat, lon, f, common.mode(emissions.get(key, [])), mobile)
+    for key, (name, lat, lon, f, mobile, k) in picked.items():
+        rows.add(name, lat, lon, f, common.mode(emissions.get(key, [])), mobile, k=k)
     stats["frequencies"] += len(picked)
     return source_date(z)
 
@@ -145,6 +146,7 @@ def build(cache, download=False):
         zpath = common.download(BASE + fn, os.path.join(cache, fn), download)
         dates.append(build_file(zpath, rows, stats))
         print(f"fcc: {fn} done, {len(rows)} rows so far", flush=True)
+    stats["digital"] = rows.drop_digital()
     print(f"fcc: {stats}", flush=True)
     meta = {
         "source": "fcc",
