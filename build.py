@@ -50,9 +50,8 @@ def published_stamp(live, name):
     return entry and entry.get("upstream")
 
 
-def keep_published(out, name, live):
-    """A source that failed to build keeps its last published copy (its zip from the live site, checked and
-    unpacked into out/). Returns its top-level index entry, or None when there is no published copy."""
+def published_zip(live, name):
+    """The live copy of a source: (its top-level index entry, its zip's bytes, checked), or None."""
     try:
         with urllib.request.urlopen(f"{live}/index.json", timeout=60) as r:
             entry = next((e for e in json.load(r)["sources"] if e["source"] == name), None)
@@ -60,12 +59,60 @@ def keep_published(out, name, live):
             return None
         with urllib.request.urlopen(f"{live}/{entry['bundle']}", timeout=300) as r:
             data = r.read()
-    except Exception as e:  # noqa: BLE001: no copy to keep is a normal answer here
-        print(f"{name}: no published copy to keep ({e})", flush=True)
+    except Exception as e:  # noqa: BLE001: no published copy is a normal answer here
+        print(f"{name}: no published copy ({e})", flush=True)
         return None
     if hashlib.sha256(data).hexdigest() != entry["bundle_sha256"]:
-        print(f"{name}: the published zip doesn't match its index; not kept", flush=True)
+        print(f"{name}: the published zip doesn't match its index", flush=True)
         return None
+    return entry, data
+
+
+def row_keys(tiles):
+    """Every row of a source as (name, latitude, longitude, frequency), from its tiles' JSON texts."""
+    keys = set()
+    for text in tiles:
+        t = json.loads(text)
+        a = o = f = 0
+        for c, da, do, df in zip(t["c"], t["a"], t["o"], t["f"]):
+            a, o, f = a + da, o + do, f + df
+            keys.add((t["n"][c], a, o, f))
+    return keys
+
+
+def tile_texts_dir(out, name):
+    d = os.path.join(out, name)
+    for fn in os.listdir(d):
+        if fn.endswith(".json") and fn != "index.json":
+            with open(os.path.join(d, fn), encoding="utf-8") as f:
+                yield f.read()
+
+
+def tile_texts_zip(data, name):
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        for fn in z.namelist():
+            if fn.startswith(f"{name}/") and fn.endswith(".json") and not fn.endswith("/index.json"):
+                yield z.read(fn).decode("utf-8")
+
+
+def changes(out, name, live):
+    """Rows added and removed against the published copy ({} when there is none to compare with)."""
+    pub = published_zip(live, name)
+    if not pub:
+        return {}
+    before, now = row_keys(tile_texts_zip(pub[1], name)), row_keys(tile_texts_dir(out, name))
+    print(f"{name}: {len(now - before):,} rows added, {len(before - now):,} removed since {pub[0].get('source_date', '?')}",
+          flush=True)
+    return {"added": len(now - before), "removed": len(before - now)}
+
+
+def keep_published(out, name, live):
+    """A source that failed to build, or whose upstream hasn't changed, keeps its last published copy (its zip from
+    the live site, checked and unpacked into out/). Returns its top-level index entry, or None when there is none."""
+    pub = published_zip(live, name)
+    if not pub:
+        return None
+    entry, data = pub
     with open(os.path.join(out, entry["bundle"]), "wb") as f:
         f.write(data)
     with zipfile.ZipFile(os.path.join(out, entry["bundle"])) as z:
@@ -74,13 +121,14 @@ def keep_published(out, name, live):
     return entry
 
 
-STATS = ("build_date", "source", "rows", "feed_operational", "feed_max_id", "feed_entries")
+STATS = ("build_date", "source", "rows", "added", "removed", "feed_operational", "feed_max_id", "feed_entries")
 
 
 def write_stats(out, top, built, feeds, live):
     """out/stats.csv: one line per source each time it is built (a kept copy adds none), the live site's earlier
     lines carried forward (none there: a fresh start). A rebuild on the same day replaces that day's lines.
-    built: the sources built this run; feeds: source -> its raw feed's counts (repeaters only)."""
+    built: the sources built this run; feeds: source -> its raw feed's counts (repeaters only) and its rows added
+    and removed since the published copy. Returns every line, oldest first."""
     lines = []
     try:
         with urllib.request.urlopen(f"{live}/stats.csv", timeout=60) as r:
@@ -93,6 +141,7 @@ def write_stats(out, top, built, feeds, live):
             continue
         feed = feeds.get(s["source"], {})
         lines.append({"build_date": top["build_date"], "source": s["source"], "rows": s["rows"],
+                      "added": feed.get("added", ""), "removed": feed.get("removed", ""),
                       "feed_operational": feed.get("operational", ""), "feed_max_id": feed.get("max_id", ""),
                       "feed_entries": feed.get("entries", "")})
     with open(os.path.join(out, "stats.csv"), "w", encoding="utf-8", newline="") as f:
@@ -100,6 +149,7 @@ def write_stats(out, top, built, feeds, live):
         w.writeheader()
         w.writerows({k: ln.get(k, "") for k in STATS} for ln in lines)
     print(f"stats.csv: {len(lines)} lines", flush=True)
+    return lines
 
 
 def main():
@@ -144,6 +194,7 @@ def main():
         if "feed" in meta:
             feeds[name] = meta["feed"]
         index = common.write_source(a.out, name, rows, meta, getattr(SOURCES[name], "LEVEL", 4))
+        feeds.setdefault(name, {}).update(changes(a.out, name, live))
         bundle = write_bundle(a.out, name)
         top["sources"].append({k: index[k] for k in (
             "source", "title", "source_date", "licence", "licence_url", "attribution", "rows")}
@@ -151,8 +202,7 @@ def main():
             | ({"upstream": stamp} if stamp else {}))
     with open(os.path.join(a.out, "index.json"), "w", encoding="utf-8") as f:
         json.dump(top, f, separators=(",", ":"), ensure_ascii=False)
-    landing.write(a.out, top)
-    write_stats(a.out, top, built, feeds, live)
+    landing.write(a.out, top, write_stats(a.out, top, built, feeds, live))
     shutil.copy(os.path.join(ROOT, "CNAME"), os.path.join(a.out, "CNAME"))
     open(os.path.join(a.out, ".nojekyll"), "w").close()
     print(f"Wrote {a.out}/index.json", flush=True)

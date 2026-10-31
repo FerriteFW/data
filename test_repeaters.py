@@ -121,5 +121,19 @@ class Stats(unittest.TestCase):
                          [("2026-10-08", "tafl"), ("2026-11-08", "repeaters")])
 
 
+class Landing(unittest.TestCase):
+    def test_history_cards(self):
+        import landing
+        top = {"build_date": "2026-11-08", "sources": [{"source": "tafl"}, {"source": "repeaters"}]}
+        stats = [{"build_date": "2026-11-08", "source": "tafl", "rows": "5"},
+                 {"build_date": "2026-11-01", "source": "repeaters", "rows": "7"},
+                 {"build_date": "2026-11-08", "source": "repeaters", "rows": "9", "added": "3", "removed": "1"}]
+        h = landing.history(top, stats)
+        self.assertIn("History starts with this build (2026-11-08)", h)  # one build: no chart
+        self.assertEqual(h.count("<svg"), 1)
+        self.assertIn("2 builds since 2026-11-01 · 2 in the last 30 days · last change +3 −1", h)
+        self.assertIn("<title>3 added</title>", h)
+
+
 if __name__ == "__main__":
     unittest.main()
