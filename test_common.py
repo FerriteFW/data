@@ -16,34 +16,45 @@ class Category(unittest.TestCase):
         self.check(PUBLIC_SAFETY, "Vancouver Police Board", "City of Vancouver Fire Rescue Services",
                    "Royal Canadian Mounted Police", "RCMP E Division", "E-Comm Emergency Communications",
                    "BC Emergency Health Services", "King County Sheriff's Office", "Service de sécurité incendie",
-                   "Ambulance New Brunswick", "Kitsap 9-1-1")
+                   "Ambulance New Brunswick", "Kitsap 9-1-1",
+                   "Société de protection des forêts contre le feu (SOPFEU)", "NOVA SCOTIA EMO HQ (GSAR)",
+                   "ALBERTA HEALTH SERVICES", "Saskatchewan Public Safety Agency")
 
     def test_transit(self):
         self.check(TRANSIT, "South Coast British Columbia Transportation Authority (TransLink)",
                    "Canadian National Railway Company", "BNSF Railway Co", "National Railroad Passenger Corp",
-                   "Coast Mountain Bus Company")
+                   "Coast Mountain Bus Company", "Metrolinx (UHF Expansion 2016)", "Maclure's Cabs (1984) Ltd.",
+                   "Yellow Taxi")
 
     def test_utilities(self):
         self.check(UTILITIES, "British Columbia Hydro and Power Authority", "FortisBC Energy Inc.",
-                   "Fortis BC", "Puget Sound Energy (gas)", "Snohomish County PUD No. 1", "Hydro-Québec")
+                   "Fortis BC", "Puget Sound Energy (gas)", "Snohomish County PUD No. 1", "Hydro-Québec",
+                   "Trans Mountain Pipeline LP", "IMPERIAL OIL LIMITED", "Cenovus Energy Inc.", "Énergie Valero inc.",
+                   "Plains Midstream Canada")
 
     def test_marine(self):
         self.check(MARINE, "Vancouver Fraser Port Authority", "British Columbia Ferry Services Inc.",
-                   "Canadian Coast Guard", "Pacific Pilotage Authority", "Seaspan Marine Corp")
+                   "Canadian Coast Guard", "Pacific Pilotage Authority", "Seaspan Marine Corp",
+                   "GCT Canada Limited Partnership", "Westshore Terminals Limited Partnership", "DP World (Canada) Inc.",
+                   "Vancouver Drydock Company", "Corporation de Gestion de la Voie Maritime du Saint-Laurent")
 
     def test_schools(self):
         self.check(SCHOOLS, "Board of Education of School District No. 39", "University of British Columbia",
-                   "Douglas College", "SD 43 Coquitlam", "Commission scolaire de Montréal")
+                   "Douglas College", "SD 43 Coquitlam", "Commission scolaire de Montréal",
+                   "British Columbia Institute of Technology", "Kwantlen Polytechnic University")
 
     def test_government(self):
         self.check(GOVERNMENT, "City of Burnaby", "Vancouver, City of", "Corporation of the District of Saanich",
                    "Metro Vancouver Regional District", "Ministry of Transportation and Infrastructure",
                    "Snohomish County", "Township of Langley", "State of Washington Dept of Transportation",
-                   "City of Port Moody", "Ville de Montréal", "His Majesty the King in right of Canada")
+                   "City of Port Moody", "Ville de Montréal", "His Majesty the King in right of Canada",
+                   "Parks Canada - Banff National Park", "Douglas Indian Band", "Muckleshoot Indian Tribe",
+                   "Service aérien gouvernemental", "Industry Canada - Spectrum")
 
     def test_business(self):
         self.check(BUSINESS, "Acme Towing Ltd", "Firestone Tire", "Business Radio Rentals", "Airport Parking Inc",
-                   "Watermark Hotels", "Powerhouse Gym", "Transport Leclerc")
+                   "Watermark Hotels", "Powerhouse Gym", "Transport Leclerc",
+                   "London Drugs Limited", "Vale Canada Limited", "Bearcom Canada Corp.", "Acme Towing")
 
     def test_service_decides(self):
         self.assertEqual(category("Acme Towing", "PW"), PUBLIC_SAFETY)

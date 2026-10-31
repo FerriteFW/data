@@ -217,26 +217,31 @@ SERVICE_CATEGORY = {"PW": PUBLIC_SAFETY, "YW": PUBLIC_SAFETY}
 CATEGORY_WORDS = (
     (PUBLIC_SAFETY, (
         "police", "fire", "wildfire", "sheriff", "sheriffs", "ems", "ambulance", "paramedic", "paramedics",
-        "rcmp", "911", "e comm", "emergency", "rescue",
-        "incendie", "incendies", "pompiers", "securite civile",
+        "rcmp", "911", "e comm", "emergency", "rescue", "gsar", "emo", "public safety", "forest protection", "health services",
+        "incendie", "incendies", "pompiers", "feu", "securite civile",
     )),
     (TRANSIT, (
         "transit", "translink", "rail", "railway", "railroad", "bnsf", "amtrak", "cn rail", "cpkc",
-        "canadian pacific", "bus", "buslines",
+        "canadian pacific", "bus", "buslines", "metrolinx", "cab", "cabs", "taxi*",
     )),
     (UTILITIES, (
         "hydro", "electric", "power", "gas", "water", "utility", "utilities", "fortis*", "pud",
+        "energy", "energie", "oil", "pipeline", "pipelines", "midstream", "enbridge", "altalink",
     )),
     (SCHOOLS, (
-        "school", "schools", "sd", "university", "college", "commission scolaire", "ecole", "universite",
+        "school", "schools", "sd", "university", "college", "institute of technology", "polytechnic*",
+        "bcit", "commission scolaire", "ecole", "universite", "polytechnique", "cegep",
     )),
     (GOVERNMENT, (
         "city of", "county", "town of", "township", "municipality", "district of", "village", "regional district",
         "ministry", "state of", "province", "dept", "department", "government", "majesty",
-        "ville de", "municipalite", "ministere", "gouvernement",
+        "parks canada", "industry canada", "national park", "first nation", "first nations", "indian band", "tribe", "tribal",
+        "ville de", "municipalite", "ministere", "gouvernement*",
     )),
     (MARINE, (
         "port", "harbour", "harbor", "marine", "ferries", "ferry", "coast guard", "pilotage", "pilots",
+        "terminal", "terminals", "dock", "docks", "drydock", "shipyard", "shipyards", "seaspan", "stevedor*",
+        "longshore*", "gct", "dp world", "tug", "tugs", "tugboat*", "maritime", "seaway",
     )),
 )
 
