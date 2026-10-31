@@ -58,7 +58,7 @@ footer{{margin-top:40px;color:var(--mut);font-size:14px}}
 <ul>
 {credits}
 </ul>
-<p><small>Not an official product of ISED, the FCC, OurAirports or HearHam. Never use it for navigation.</small></p>
+<p><small>Not an official product of ISED, the FCC, OurAirports or HearHam. For finding frequencies, not runways: never use it for navigation.</small></p>
 
 <footer>Scripts and issues: <a href="https://github.com/FerriteFW/data">github.com/FerriteFW/data</a> · <a href="https://ferritefw.dev">ferritefw.dev</a></footer>
 </main>
