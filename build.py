@@ -1,11 +1,13 @@
 """Build every source into out/: per-source tiles and index.json, a top-level index.json, CNAME.
 
-python3 build.py --cache DIR [--out out] [--download] [--only tafl|fcc|airports]
+python3 build.py --cache DIR [--out out] [--download] [--only tafl|fcc|airports|repeaters]
 """
 
 import argparse
+import csv
 import datetime
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -17,9 +19,10 @@ import common
 import landing
 from airports import build as airports
 from fcc import build as fcc
+from repeaters import build as repeaters
 from tafl import build as tafl
 
-SOURCES = {"tafl": tafl, "fcc": fcc, "airports": airports}
+SOURCES = {"tafl": tafl, "fcc": fcc, "airports": airports, "repeaters": repeaters}
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -61,6 +64,33 @@ def keep_published(out, name, live):
     return entry
 
 
+STATS = ("build_date", "source", "rows", "feed_operational", "feed_max_id", "feed_entries")
+
+
+def write_stats(out, top, feeds, live):
+    """out/stats.csv: one line per source per build, the live site's earlier lines carried forward (none there:
+    a fresh start). A rebuild on the same day replaces that day's lines. feeds: source -> its raw feed's counts
+    (repeaters only)."""
+    lines = []
+    try:
+        with urllib.request.urlopen(f"{live}/stats.csv", timeout=60) as r:
+            lines = list(csv.DictReader(io.StringIO(r.read().decode("utf-8"))))
+    except Exception as e:  # noqa: BLE001: no stats yet is a normal answer
+        print(f"stats.csv: starting fresh ({e})", flush=True)
+    names = {s["source"] for s in top["sources"]}
+    lines = [ln for ln in lines if not (ln.get("build_date") == top["build_date"] and ln.get("source") in names)]
+    for s in top["sources"]:
+        feed = feeds.get(s["source"], {})
+        lines.append({"build_date": top["build_date"], "source": s["source"], "rows": s["rows"],
+                      "feed_operational": feed.get("operational", ""), "feed_max_id": feed.get("max_id", ""),
+                      "feed_entries": feed.get("entries", "")})
+    with open(os.path.join(out, "stats.csv"), "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, STATS, extrasaction="ignore", lineterminator="\n")
+        w.writeheader()
+        w.writerows({k: ln.get(k, "") for k in STATS} for ln in lines)
+    print(f"stats.csv: {len(lines)} lines", flush=True)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--cache", required=True, help="download folder (keep it outside the repository)")
@@ -74,6 +104,7 @@ def main():
     os.makedirs(a.out, exist_ok=True)
     top = {"build_date": today, "url": "https://data.ferritefw.dev", "sources": []}
     failed = []
+    feeds = {}
     for name in a.only or list(SOURCES):
         shutil.rmtree(os.path.join(a.out, name), ignore_errors=True)
         try:
@@ -86,6 +117,8 @@ def main():
                 top["sources"].append(entry)
             continue
         meta["build_date"] = today
+        if "feed" in meta:
+            feeds[name] = meta["feed"]
         index = common.write_source(a.out, name, rows, meta, getattr(SOURCES[name], "LEVEL", 4))
         bundle = write_bundle(a.out, name)
         top["sources"].append({k: index[k] for k in (
@@ -94,6 +127,7 @@ def main():
     with open(os.path.join(a.out, "index.json"), "w", encoding="utf-8") as f:
         json.dump(top, f, separators=(",", ":"), ensure_ascii=False)
     landing.write(a.out, top)
+    write_stats(a.out, top, feeds, a.live.rstrip("/"))
     shutil.copy(os.path.join(ROOT, "CNAME"), os.path.join(a.out, "CNAME"))
     open(os.path.join(a.out, ".nojekyll"), "w").close()
     print(f"Wrote {a.out}/index.json", flush=True)

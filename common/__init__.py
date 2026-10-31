@@ -309,17 +309,22 @@ class Rows:
     def __init__(self):
         self.rows = {}
 
-    def add(self, name, lat, lon, f, m=None, mobile=False, t=None, k=BUSINESS):
+    def add(self, name, lat, lon, f, m=None, mobile=False, t=None, k=BUSINESS, rpt=None):
+        """rpt: a repeater's (offset kHz, encode tone, decode tone), kept from the first listing. Returns whether
+        the row is new."""
         lat, lon = round(lat, 5), round(lon, 5)
         key = (name, f, lat, lon)
         old = self.rows.get(key)
         if old is None:
-            self.rows[key] = [m, mobile, t, k]
+            self.rows[key] = [m, mobile, t, k, rpt]
+            return True
         else:
             old[0] = merge_mode(old[0], m)
             old[1] = old[1] and mobile  # a base listing beats a mobile one
             old[2] = old[2] or t
             old[3] = old[3] or k  # two licensees shortened alike: a category beats none
+            old[4] = old[4] or rpt
+            return False
 
     def __len__(self):
         return len(self.rows)
@@ -336,7 +341,7 @@ class Rows:
         """Rows by tile: 4-character squares (big ones split into subsquares), or 2-character fields."""
         cell = grid2 if level == 2 else grid4
         out = {}
-        for (name, f, lat, lon), (m, mobile, t, k) in self.rows.items():
+        for (name, f, lat, lon), (m, mobile, t, k, rpt) in self.rows.items():
             r = {"c": name, "l": [lat, lon], "f": f}
             if k:
                 r["k"] = k
@@ -346,6 +351,8 @@ class Rows:
                 r["s"] = "m"
             if t:
                 r["t"] = t
+            if rpt:
+                r["d"], r["pe"], r["pd"] = rpt
             out.setdefault(cell(lat, lon), []).append(r)
         for g in [g for g, rows in out.items() if level == 4 and len(rows) > SPLIT]:
             for r in out.pop(g):
@@ -353,6 +360,53 @@ class Rows:
         for rows in out.values():
             rows.sort(key=lambda r: (r["c"], r["f"], r["l"]))
         return out
+
+
+# -------------------------------------------------------------------------
+# Tones (repeaters' pn/pe/pd columns)
+# -------------------------------------------------------------------------
+CTCSS = (67.0, 69.3, 71.9, 74.4, 77.0, 79.7, 82.5, 85.4, 88.5, 91.5, 94.8, 97.4, 100.0, 103.5, 107.2, 110.9,
+         114.8, 118.8, 123.0, 127.3, 131.8, 136.5, 141.3, 146.2, 150.0, 151.4, 156.7, 159.8, 162.2, 165.5, 167.9,
+         171.3, 173.8, 177.3, 179.9, 183.5, 186.2, 189.9, 192.8, 196.6, 199.5, 203.5, 206.5, 210.7, 218.1, 225.7,
+         229.1, 233.6, 241.8, 250.3, 254.1)
+DCS = frozenset((
+    23, 25, 26, 31, 32, 36, 43, 47, 51, 53, 54, 65, 71, 72, 73, 74, 114, 115, 116, 122, 125, 131, 132, 134, 143,
+    145, 152, 155, 156, 162, 165, 172, 174, 205, 212, 223, 225, 226, 243, 244, 245, 246, 251, 252, 255, 261, 263,
+    265, 266, 271, 274, 306, 311, 315, 325, 331, 332, 343, 346, 351, 356, 364, 365, 371, 411, 412, 413, 423, 431,
+    432, 445, 446, 452, 454, 455, 462, 464, 465, 466, 503, 506, 516, 523, 526, 532, 546, 565, 606, 612, 624, 627,
+    631, 632, 654, 662, 664, 703, 712, 723, 731, 732, 734, 743, 754))  # octal codes, written as decimal digits
+_DCS_RE = re.compile(r"^(?:DCS|DPL|D)\s*0*(\d{1,3})(?:\.0+)?([NI]?)$")
+_HZ_RE = re.compile(r"^\d{2,3}(?:\.\d*)?$")
+
+
+def tone(text):
+    """A tone as HearHam writes it, in one form: CTCSS as Hz with one decimal ('100.0'), DCS as 'D' and three
+    octal digits ('D023'; 'D023I' inverted), or None for none.
+
+    Several parts ('NAC293/100.0', 'CC1/146.2', '88.5/71.9') give the first that's a tone: the others are
+    digital modes' codes (P25 NAC, DMR colour code, ...). A trailing '*' goes. A number is CTCSS when it's within
+    0.2 Hz of a standard tone or is one cut short ('103' is 103.5); a bare three-digit standard DCS code ('023')
+    is DCS. Anything else is no tone ('0', '1750.0', 'CC1', a DCS code that isn't standard)."""
+    for part in text.upper().replace("\xa0", "").replace("*", "").split("/"):
+        part = part.strip()
+        m = _DCS_RE.match(part)
+        if m:
+            if int(m.group(1)) in DCS:
+                return f"D{int(m.group(1)):03d}{m.group(2) if m.group(2) == 'I' else ''}"
+            continue
+        if _HZ_RE.match(part):
+            hz = float(part)
+            best = min(CTCSS, key=lambda c: abs(c - hz))
+            if abs(best - hz) <= 0.2 or ("." not in part and int(best) == int(hz)):  # '103': 103.5 cut short
+                return f"{best:.1f}"
+            if part.isdigit() and len(part) == 3 and int(part) in DCS:  # '023', '223': a DCS code without its D
+                return f"D{part}"
+    return None
+
+
+def tone_order(p):
+    """The tone table's order: CTCSS by frequency, then DCS by code."""
+    return (1, p) if p.startswith("D") else (0, float(p))
 
 
 FORMAT = "columnar-1"
@@ -367,7 +421,10 @@ def columnar(rows):
     ix = {n: i for i, n in enumerate(names)}
     types = sorted({r["t"] for r in rows if r.get("t")})
     tx = {n: i for i, n in enumerate(types)}
-    t = {"n": names, "c": [], "a": [], "o": [], "f": [], "m": [], "s": [], "tn": types, "t": [], "k": []}
+    tones = sorted({p for r in rows for p in (r.get("pe"), r.get("pd")) if p}, key=tone_order)
+    px = {p: i for i, p in enumerate(tones)}
+    t = {"n": names, "c": [], "a": [], "o": [], "f": [], "m": [], "s": [], "tn": types, "t": [], "k": [],
+         "d": [], "pn": tones, "pe": [], "pd": []}
     pa = po = pf = 0
     for r in sorted(rows, key=lambda r: (r["l"][0], r["l"][1], r["f"], r["c"])):
         a, o, f = round(r["l"][0] * 1e5), round(r["l"][1] * 1e5), round(r["f"] * 2)
@@ -379,6 +436,9 @@ def columnar(rows):
         t["s"].append(1 if r.get("s") else 0)
         t["t"].append(tx.get(r.get("t"), -1))
         t["k"].append(r.get("k", BUSINESS))
+        t["d"].append(round(r.get("d", 0) * 2))
+        t["pe"].append(px.get(r.get("pe"), -1))
+        t["pd"].append(px.get(r.get("pd"), -1))
         pa, po, pf = a, o, f
     if not any(t["s"]):
         del t["s"]
@@ -388,6 +448,10 @@ def columnar(rows):
         del t["tn"], t["t"]
     if not any(t["k"]):
         del t["k"]
+    if not any("d" in r for r in rows):  # repeaters only (simplex ones have 0)
+        del t["d"]
+    if not tones:
+        del t["pn"], t["pe"], t["pd"]
     return t
 
 
