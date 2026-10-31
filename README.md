@@ -11,7 +11,10 @@ Served at https://data.ferritefw.dev.
 - `repeaters/`: the world's operational analog FM amateur repeaters on 2 m, 1.25 m and 70 cm, from HearHam (user-contributed). Free to use in applications, per HearHam.com; no formal data licence ([repeaters/LICENCE-DATA.md](repeaters/LICENCE-DATA.md)).
 - `common/`: shared code: bands, name shortening, emission modes, categories, tiles. Tests: `python3 -m unittest`.
 - `build.py`: builds every source into `out/`.
-- `.forgejo/workflows/publish.yml`: the monthly build, on Forgejo's runner at home (the FCC refuses GitHub's runners). Force-pushes `out/` to the `gh-pages` branch here.
+- `.forgejo/workflows/publish.yml`: the daily build, on Forgejo's runner at home (the FCC refuses GitHub's runners). Force-pushes `out/` to the `gh-pages` branch here.
+  - Repeaters and airports are rebuilt every day.
+  - The TAFL and the FCC are rebuilt only when their upstream files change (a header-only check of Last-Modified, kept as `upstream` in the top-level index); otherwise their published copy is kept. `--force` builds everything.
+  - `stats.csv` gets a line per source each time it is built, so the TAFL's and the FCC's lines mark their releases.
 - `.github/workflows/pages.yml`: the same by hand on GitHub, as a fallback (Canada and airports refresh; the FCC keeps its last copy).
 - `landing.py`: writes the landing page (`index.html`) from the build's index.
 - `check.py`: both workflows' check that each source looks whole before publishing.

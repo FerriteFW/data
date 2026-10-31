@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import common  # noqa: E402
 
 URL = "https://www.ic.gc.ca/engineering/SMS_TAFL_Files/TAFL_LTAF.zip"
+UPSTREAM = (URL,)  # rebuilt only when ISED publishes a new extract (build.py)
 PAGE = "https://ised-isde.canada.ca/site/spectrum-management-system/en/download-sms-data"
 
 LICENCE = "Open Government Licence – Canada 2.0"

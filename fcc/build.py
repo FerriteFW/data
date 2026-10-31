@@ -25,6 +25,7 @@ import common  # noqa: E402
 
 BASE = "https://data.fcc.gov/download/pub/uls/complete/"
 FILES = ("l_LMpriv.zip", "l_LMcomm.zip")
+UPSTREAM = tuple(BASE + f for f in FILES)  # rebuilt only when the FCC posts new weekly files (build.py)
 PAGE = "https://www.fcc.gov/uls/transactions/daily-weekly"
 
 LICENCE = "Public domain in the US (work of the US federal government, 17 U.S.C. § 105)"

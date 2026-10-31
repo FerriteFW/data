@@ -1,5 +1,5 @@
 name: Build and publish (fallback)
-# By hand only: the monthly build runs on Forgejo (.forgejo/workflows/publish.yml), because the FCC refuses its
+# By hand only: the daily build runs on Forgejo (.forgejo/workflows/publish.yml), because the FCC refuses its
 # downloads to GitHub's runners. This one refreshes the sources that do download here (Canada, airports); the FCC
 # keeps its last published copy. Publishes the same way: out/ force-pushed to gh-pages.
 on:

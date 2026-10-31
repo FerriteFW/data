@@ -52,7 +52,7 @@ footer{{margin-top:40px;color:var(--mut);font-size:14px}}
 </ul>
 
 <h2>Updates</h2>
-<p>Rebuilt monthly from each source's own public download. A source that can't be fetched keeps its last copy.</p>
+<p>Rebuilt daily from each source's own public download: HearHam and OurAirports every day, the TAFL and the FCC when they publish new files. A source that can't be fetched keeps its last copy.</p>
 
 <h2>Credits</h2>
 <ul>

@@ -86,7 +86,7 @@ class Columns(unittest.TestCase):
 
 
 class Stats(unittest.TestCase):
-    def run_stats(self, live_csv):
+    def run_stats(self, live_csv, built=("tafl", "repeaters")):
         top = {"build_date": "2026-11-08", "sources": [{"source": "tafl", "rows": 5}, {"source": "repeaters", "rows": 7}]}
         feeds = {"repeaters": {"entries": 30, "operational": 20, "max_id": 99}}
         with tempfile.TemporaryDirectory() as d:
@@ -97,7 +97,7 @@ class Stats(unittest.TestCase):
                 resp.__enter__.return_value.read.return_value = live_csv.encode()
                 opener = mock.patch("urllib.request.urlopen", return_value=resp)
             with opener:
-                build.write_stats(d, top, feeds, "https://example.invalid")
+                build.write_stats(d, top, set(built), feeds, "https://example.invalid")
             with open(os.path.join(d, "stats.csv"), encoding="utf-8") as f:
                 return list(csv.DictReader(f))
 
@@ -112,6 +112,13 @@ class Stats(unittest.TestCase):
         lines = self.run_stats(old)
         self.assertEqual([(ln["build_date"], ln["source"], ln["rows"]) for ln in lines],
                          [("2026-10-08", "tafl", "4"), ("2026-11-08", "tafl", "5"), ("2026-11-08", "repeaters", "7")])
+
+
+    def test_kept_source_adds_no_line(self):
+        lines = self.run_stats("build_date,source,rows,feed_operational,feed_max_id,feed_entries\n2026-10-08,tafl,4,,,\n",
+                               built=("repeaters",))
+        self.assertEqual([(ln["build_date"], ln["source"]) for ln in lines],
+                         [("2026-10-08", "tafl"), ("2026-11-08", "repeaters")])
 
 
 if __name__ == "__main__":

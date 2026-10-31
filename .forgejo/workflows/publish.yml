@@ -1,12 +1,13 @@
 name: Build and publish
-# The main monthly build, on Forgejo's runner at home: the FCC refuses its downloads to GitHub's runners (HTTP 403,
+# The daily build, on Forgejo's runner at home: the FCC refuses its downloads to GitHub's runners (HTTP 403,
 # Oct 30, 2026). Builds every source and force-pushes out/ to the gh-pages branch on GitHub (one fresh commit each
 # time, so the history never grows), which GitHub Pages serves as data.ferritefw.dev.
 # Needs the Forgejo secret GH_PAGES_TOKEN: a fine-grained GitHub token for FerriteFW/data, Contents read and write.
 # Without it the build still runs and says it didn't publish.
 on:
   schedule:
-    - cron: "17 6 8 * *" # the 8th: after ISED's early-month extract and a fresh FCC weekly file
+    - cron: "17 6 * * *" # daily: HearHam and OurAirports change often; TAFL and the FCC rebuild only when
+                         # their upstream files change (a header check; about weekly for the FCC)
   workflow_dispatch:
 
 concurrency:

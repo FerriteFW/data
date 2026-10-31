@@ -35,6 +35,30 @@ def download(url, path, force=False):
     return path
 
 
+def upstream_stamp(urls):
+    """What the server says about its files now (each one's Last-Modified, else its ETag), from a header-only
+    request: a big source is downloaded again only when this differs from its published copy's. None when a
+    server doesn't answer or says nothing usable (then the source just builds)."""
+    marks = []
+    for url in urls:
+        r = subprocess.run(["curl", "-fsSIL", "--retry", "3", "--max-time", "60", url],
+                           capture_output=True, text=True)
+        if r.returncode:
+            return None
+        head = {}
+        for line in r.stdout.splitlines():  # the last response's headers win (after redirects)
+            if line.upper().startswith("HTTP/"):
+                head = {}
+            elif ":" in line:
+                k, v = line.split(":", 1)
+                head[k.strip().lower()] = v.strip()
+        mark = head.get("last-modified") or head.get("etag")
+        if not mark:
+            return None
+        marks.append(mark)
+    return " | ".join(marks)
+
+
 # -------------------------------------------------------------------------
 # Emission designator -> mode
 # -------------------------------------------------------------------------

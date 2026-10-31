@@ -1,6 +1,6 @@
 """Build every source into out/: per-source tiles and index.json, a top-level index.json, CNAME.
 
-python3 build.py --cache DIR [--out out] [--download] [--only tafl|fcc|airports|repeaters]
+python3 build.py --cache DIR [--out out] [--download] [--force] [--only tafl|fcc|airports|repeaters]
 """
 
 import argparse
@@ -40,6 +40,16 @@ def write_bundle(out, name):
     return {"bundle": f"{name}.zip", "bundle_bytes": size, "bundle_sha256": sha}
 
 
+def published_stamp(live, name):
+    """The upstream stamp the live copy of a source was built from (None: no copy, or built before stamps)."""
+    try:
+        with urllib.request.urlopen(f"{live}/index.json", timeout=60) as r:
+            entry = next((e for e in json.load(r)["sources"] if e["source"] == name), None)
+    except Exception:  # noqa: BLE001: no live index means build
+        return None
+    return entry and entry.get("upstream")
+
+
 def keep_published(out, name, live):
     """A source that failed to build keeps its last published copy (its zip from the live site, checked and
     unpacked into out/). Returns its top-level index entry, or None when there is no published copy."""
@@ -67,19 +77,20 @@ def keep_published(out, name, live):
 STATS = ("build_date", "source", "rows", "feed_operational", "feed_max_id", "feed_entries")
 
 
-def write_stats(out, top, feeds, live):
-    """out/stats.csv: one line per source per build, the live site's earlier lines carried forward (none there:
-    a fresh start). A rebuild on the same day replaces that day's lines. feeds: source -> its raw feed's counts
-    (repeaters only)."""
+def write_stats(out, top, built, feeds, live):
+    """out/stats.csv: one line per source each time it is built (a kept copy adds none), the live site's earlier
+    lines carried forward (none there: a fresh start). A rebuild on the same day replaces that day's lines.
+    built: the sources built this run; feeds: source -> its raw feed's counts (repeaters only)."""
     lines = []
     try:
         with urllib.request.urlopen(f"{live}/stats.csv", timeout=60) as r:
             lines = list(csv.DictReader(io.StringIO(r.read().decode("utf-8"))))
     except Exception as e:  # noqa: BLE001: no stats yet is a normal answer
         print(f"stats.csv: starting fresh ({e})", flush=True)
-    names = {s["source"] for s in top["sources"]}
-    lines = [ln for ln in lines if not (ln.get("build_date") == top["build_date"] and ln.get("source") in names)]
+    lines = [ln for ln in lines if not (ln.get("build_date") == top["build_date"] and ln.get("source") in built)]
     for s in top["sources"]:
+        if s["source"] not in built:
+            continue
         feed = feeds.get(s["source"], {})
         lines.append({"build_date": top["build_date"], "source": s["source"], "rows": s["rows"],
                       "feed_operational": feed.get("operational", ""), "feed_max_id": feed.get("max_id", ""),
@@ -97,6 +108,8 @@ def main():
     p.add_argument("--out", default="out")
     p.add_argument("--download", action="store_true", help="download again even if cached")
     p.add_argument("--only", choices=sorted(SOURCES), action="append")
+    p.add_argument("--force", action="store_true",
+                   help="build every source, even one whose upstream files haven't changed since its published copy")
     p.add_argument("--live", default="https://data.ferritefw.dev",
                    help="where a source that fails to build keeps its last published copy from")
     a = p.parse_args()
@@ -105,29 +118,41 @@ def main():
     top = {"build_date": today, "url": "https://data.ferritefw.dev", "sources": []}
     failed = []
     feeds = {}
+    built = set()
+    live = a.live.rstrip("/")
     for name in a.only or list(SOURCES):
         shutil.rmtree(os.path.join(a.out, name), ignore_errors=True)
+        # A big source with dated upstream files (TAFL, the FCC) keeps its published copy until they change.
+        stamp = common.upstream_stamp(SOURCES[name].UPSTREAM) if hasattr(SOURCES[name], "UPSTREAM") else None
+        if stamp and not a.force and published_stamp(live, name) == stamp:
+            entry = keep_published(a.out, name, live)
+            if entry:
+                print(f"{name}: upstream unchanged ({stamp}); kept", flush=True)
+                top["sources"].append(entry)
+                continue
         try:
             rows, meta = SOURCES[name].build(a.cache, a.download)
         except Exception as e:  # noqa: BLE001: one source failing (a refused download) mustn't hold back the rest
             print(f"{name}: build failed: {e!r}", flush=True)
             failed.append(name)
-            entry = keep_published(a.out, name, a.live.rstrip("/"))
+            entry = keep_published(a.out, name, live)
             if entry:
                 top["sources"].append(entry)
             continue
         meta["build_date"] = today
+        built.add(name)
         if "feed" in meta:
             feeds[name] = meta["feed"]
         index = common.write_source(a.out, name, rows, meta, getattr(SOURCES[name], "LEVEL", 4))
         bundle = write_bundle(a.out, name)
         top["sources"].append({k: index[k] for k in (
             "source", "title", "source_date", "licence", "licence_url", "attribution", "rows")}
-            | {"index": f"{name}/index.json", "tiles": len(index["tiles"])} | bundle)
+            | {"index": f"{name}/index.json", "tiles": len(index["tiles"])} | bundle
+            | ({"upstream": stamp} if stamp else {}))
     with open(os.path.join(a.out, "index.json"), "w", encoding="utf-8") as f:
         json.dump(top, f, separators=(",", ":"), ensure_ascii=False)
     landing.write(a.out, top)
-    write_stats(a.out, top, feeds, a.live.rstrip("/"))
+    write_stats(a.out, top, built, feeds, live)
     shutil.copy(os.path.join(ROOT, "CNAME"), os.path.join(a.out, "CNAME"))
     open(os.path.join(a.out, ".nojekyll"), "w").close()
     print(f"Wrote {a.out}/index.json", flush=True)
