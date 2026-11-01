@@ -34,6 +34,15 @@ BANDS = ((144_000_000, 148_000_000), (430_000_000, 440_000_000))
 FM_MODES = {"FM", "FMN"}
 ALIAS = re.compile(r"^[A-Z]{1,6}-?\d+[A-Z]?$")
 
+# Curated tones SatNOGS doesn't carry, keyed by (NORAD number, uplink low in Hz): the FM transponder's access
+# tone (`tone`) and arming tone (`arm_tone`, sent ~2 s on the first key-up of a pass, before the access tone).
+# Only tones with a solid published source; checked Nov 2026, SO-50 is the only listed FM satellite with one.
+OVERRIDES = {
+    # SO-50: 74.4 Hz for about 2 s arms a 10-minute timer, then 67.0 Hz for the contact.
+    # AMSAT, https://www.amsat.org/two-way-satellites/so-50-satellite-information/
+    (27607, 145_850_000): {"tone": "67.0", "arm_tone": "74.4"},
+}
+
 
 def in_band(hz):
     return hz is not None and any(lo <= hz <= hi for lo, hi in BANDS)
@@ -76,9 +85,10 @@ def usable(t):
 
 
 def transmitter(t):
+    """A transmitter for the file; OVERRIDES adds an arming tone (and fixes the access tone) where curated."""
     ul = t.get("uplink_low")
     dl = t.get("downlink_low")
-    return {
+    out = {
         "desc": " ".join((t.get("description") or "").split()),
         "mode": "APRS" if kind(t) == "aprs" else "FM",
         "up": [ul, t.get("uplink_high") or ul],
@@ -86,6 +96,9 @@ def transmitter(t):
         "tone": tone_of(t.get("description")),
         "invert": bool(t.get("invert")),
     }
+    if out["mode"] == "FM":
+        out.update(OVERRIDES.get((t.get("norad_cat_id"), ul), {}))
+    return out
 
 
 def short_name(name):

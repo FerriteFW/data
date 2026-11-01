@@ -103,6 +103,22 @@ class Join(unittest.TestCase):
                          ("FM", [145850000, 145850000], [436795000, 436795000], "67.0", False))
         self.assertIn(so["status"], ("active", "inactive", "unknown"))
 
+    def test_so50_arming_tone(self):
+        # SO-50: 74.4 Hz arms the timer, 67.0 Hz is the access tone (the curated override).
+        t = self.by[27607]["transmitters"][0]
+        self.assertEqual((t["tone"], t["arm_tone"]), ("67.0", "74.4"))
+
+    def test_arm_tone_absent_elsewhere(self):
+        for s in self.out:
+            for t in s["transmitters"]:
+                if s["id"] != 27607:
+                    self.assertNotIn("arm_tone", t, s["name"])
+
+    def test_override_fills_a_missing_access_tone(self):
+        t = sats.transmitter(tx(norad_cat_id=27607, description="Mode V/U FM Voice"))
+        self.assertEqual((t["tone"], t["arm_tone"]), ("67.0", "74.4"))
+        self.assertNotIn("arm_tone", sats.transmitter(tx(norad_cat_id=27607, uplink_low=145900000)))
+
     def test_iss_transmitters_ordered(self):
         modes = [t["mode"] for t in self.by[25544]["transmitters"]]
         self.assertEqual(modes, sorted(modes, key=lambda m: m != "FM"))
@@ -152,6 +168,8 @@ class Output(unittest.TestCase):
             self.assertEqual(doc["format"], "satellites-1")
             self.assertLessEqual(doc["oldest_epoch"], doc["newest_epoch"])
             self.assertEqual(len(doc["satellites"]), 4)
+            so = next(s for s in doc["satellites"] if s["id"] == 27607)
+            self.assertEqual(so["transmitters"][0]["arm_tone"], "74.4")
             keys = sats.row_keys([text])
             self.assertIn((27607,), keys)
             self.assertGreater(len(keys), 4)
