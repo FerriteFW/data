@@ -42,7 +42,7 @@ footer{{margin-top:40px;color:var(--mut);font-size:14px}}
 <body>
 <main>
 <h1>Ferrite data</h1>
-<p class="lede">Channel data for <a href="https://ferritefw.dev">Ferrite</a> Console: licensed radio sites, airport frequencies and amateur repeaters near a place, split by grid square so an app only downloads what's around it. Built {build_date}.</p>
+<p class="lede">Channel data for <a href="https://ferritefw.dev">Ferrite</a> Console: licensed radio sites, airport frequencies and amateur repeaters near a place, split by grid square so an app only downloads what's around it, and the amateur satellites a handheld can work. Built {build_date}.</p>
 
 <h2>What's here</h2>
 <div class="wrap"><table>
@@ -61,19 +61,20 @@ footer{{margin-top:40px;color:var(--mut);font-size:14px}}
 <li><code>index.json</code>: every source, with its build date, row count, licence and its zip's size and SHA-256.</li>
 <li><code>&lt;source&gt;/index.json</code>: one source's tiles and their row counts, plus <code>format</code> and <code>level</code>.</li>
 <li>Tiles are Maidenhead grid locators: 4-character squares such as <code>tafl/CN89.json</code> (2&deg; by 1&deg;). A busy square (over 6,000 rows: big cities) comes as its 6-character subsquares instead (<code>tafl/CN89kg.json</code>), listed under <code>split</code>. Airports and repeaters use 2-character fields (<code>airports/CN.json</code>, 20&deg; by 10&deg;).</li>
+<li><code>satellites/sats.json</code>: not tiles, one small file: each satellite's orbit elements and FM or APRS transponders (<code>satellites-1</code>, in the repository's README).</li>
 <li><code>&lt;source&gt;.zip</code>: the whole source in one download, for keeping it offline.</li>
 <li><code>stats.csv</code>: a line per source each time it's built (row count, rows added and removed, and for repeaters HearHam's own counts), kept from build to build.</li>
 <li>Tiles are columnar JSON (<code>columnar-1</code>): names once, then whole-number differences for position and frequency. The format is in the <a href="https://github.com/FerriteFW/data#output">repository's README</a>.</li>
 </ul>
 
 <h2>Updates</h2>
-<p>Rebuilt daily from each source's own public download: HearHam and OurAirports every day, the TAFL and the FCC when they publish new files. A source that can't be fetched keeps its last copy.</p>
+<p>Rebuilt daily from each source's own public download: HearHam, OurAirports, CelesTrak and SatNOGS every day, the TAFL and the FCC when they publish new files. A source that can't be fetched keeps its last copy.</p>
 
 <h2>Credits</h2>
 <ul>
 {credits}
 </ul>
-<p><small>Not an official product of ISED, the FCC, OurAirports or HearHam. For finding frequencies, not runways: never use it for navigation.</small></p>
+<p><small>Not an official product of ISED, the FCC, OurAirports, HearHam, CelesTrak or SatNOGS. For finding frequencies, not runways: never use it for navigation. Satellite elements age within days: refresh them.</small></p>
 
 <footer>Scripts and issues: <a href="https://github.com/FerriteFW/data">github.com/FerriteFW/data</a> · <a href="https://ferritefw.dev">ferritefw.dev</a></footer>
 </main>
@@ -82,7 +83,8 @@ footer{{margin-top:40px;color:var(--mut);font-size:14px}}
 """
 
 SHORT = {"tafl": "Canada: licensed sites (ISED TAFL)", "fcc": "US: licensed sites (FCC ULS)", "airports": "World: airport frequencies (OurAirports)",
-         "repeaters": "World: amateur repeaters (HearHam)"}
+         "repeaters": "World: amateur repeaters (HearHam)",
+         "satellites": "World: amateur FM satellites (CelesTrak, SatNOGS)"}
 
 
 W, TOP, H, GAP, BARS = 320, 14, 56, 10, 34  # width, label strip, rows chart, gap, changes chart (SVG units)

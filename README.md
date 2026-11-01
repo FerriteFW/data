@@ -1,6 +1,6 @@
 # Ferrite channel-library data
 
-Licensed land-mobile sites, airport frequencies and amateur repeaters, split by map square, for Ferrite Console's channel library.
+Licensed land-mobile sites, airport frequencies, amateur repeaters and satellites, split by map square, for Ferrite Console's channel library.
 Served at https://data.ferritefw.dev.
 
 ## What's here
@@ -9,10 +9,11 @@ Served at https://data.ferritefw.dev.
 - `fcc/`: US, from the FCC's ULS weekly files (Land Mobile – Private and Commercial). Public domain in the US ([fcc/LICENCE-DATA.md](fcc/LICENCE-DATA.md)).
 - `airports/`: the world's airport frequencies (108-137 MHz), from OurAirports. Public domain ([airports/LICENCE-DATA.md](airports/LICENCE-DATA.md)).
 - `repeaters/`: the world's operational analog FM amateur repeaters on 2 m, 1.25 m and 70 cm, from HearHam (user-contributed). Free to use in applications, per HearHam.com; no formal data licence ([repeaters/LICENCE-DATA.md](repeaters/LICENCE-DATA.md)).
+- `satellites/`: the amateur satellites a 2 m / 70 cm FM handheld can work: orbit elements from CelesTrak (public data) and transponders from SatNOGS DB. CC BY-SA 4.0, and the derived file is shared the same way ([satellites/LICENCE-DATA.md](satellites/LICENCE-DATA.md)).
 - `common/`: shared code: bands, name shortening, emission modes, categories, tiles. Tests: `python3 -m unittest`.
 - `build.py`: builds every source into `out/`.
 - `.forgejo/workflows/publish.yml`: the daily build, on Forgejo's runner at home (the FCC refuses GitHub's runners). Force-pushes `out/` to the `gh-pages` branch here.
-  - Repeaters and airports are rebuilt every day.
+  - Repeaters, airports and satellites are rebuilt every day.
   - The TAFL and the FCC are rebuilt only when their upstream files change (a header-only check of Last-Modified, kept as `upstream` in the top-level index); otherwise their published copy is kept. `--force` builds everything.
   - `stats.csv` gets a line per source each time it is built, so the TAFL's and the FCC's lines mark their releases.
 - `.github/workflows/pages.yml`: the same by hand on GitHub, as a fallback (Canada and airports refresh; the FCC keeps its last copy).
@@ -28,7 +29,7 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 ```
 
 - Python 3.9 or newer, standard library only.
-- Downloads: TAFL 64 MB, FCC 505 MB (zips read in place, never unzipped), OurAirports about 15 MB of CSV, HearHam about 10 MB of JSON.
+- Downloads: TAFL 64 MB, FCC 505 MB (zips read in place, never unzipped), OurAirports about 15 MB of CSV, HearHam about 10 MB of JSON, CelesTrak and SatNOGS about 6 MB of JSON.
 - Keep the cache outside the repository.
 - About 1.5 minutes and 1.6 GB of memory (the FCC join).
 - A source that fails to build (a refused download) keeps its last published copy from data.ferritefw.dev, or is left out if there is none; the others still deploy.
@@ -65,6 +66,20 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 - `stats.csv` (at the root): one line per source per build: `build_date`, `source`, `rows`, and for repeaters the raw feed's `feed_operational` (entries marked operational), `feed_max_id` (its highest id) and `feed_entries` (every entry); empty for the others.
   Each build carries the live site's earlier lines forward and adds its own (a rebuild the same day replaces that day's).
 - Rows are unique by name, frequency and position.
+
+## Satellites
+
+- `satellites/index.json` is the usual source index (`rows` is the satellite count, `tiles` is `{"sats.json": count}`), plus `newest_epoch` and `oldest_epoch`.
+- `satellites/sats.json` (`format`: `satellites-1`, about 15 kB), not tiles:
+  - `built` (date), `licence`, `attribution`, `newest_epoch`, `oldest_epoch` (the elements' ISO epochs, UTC), and `satellites`, ordered by NORAD number.
+  - A satellite: `id` (NORAD catalogue number), `name` (CelesTrak's), `short` (16 characters at most: the alias in parentheses, `AO-7`, else the name), `status`, `tle` (two lines, 69 characters, made from the elements), `elements`, `transmitters`.
+  - `status`: `active` (SatNOGS: in orbit with an alive transmitter we keep), `unknown` (its elements are over 30 days older than the newest: probably silent), `inactive` (reserved: dead and re-entered satellites are left out).
+  - `elements` (CelesTrak's OMM, for SGP4): `epoch`, `n` (revs per day), `e`, `i`, `raan`, `w` (argument of perigee), `m` (mean anomaly; angles in degrees), `bstar`, `ndot`, `nddot`, `rev` (at epoch).
+  - A transmitter: `desc` (SatNOGS's), `mode` (`FM`: voice repeater or transponder; `APRS`: 1200 baud AFSK digipeater), `up` and `down` (`[low, high]` in Hz; equal for a single channel), `tone` (the uplink CTCSS in Hz as text, `"67.0"`, read from the description; null when it names none), `invert` (SatNOGS's flag).
+  - All of a satellite's working transmitters are listed, most useful first: FM voice with a tone, other FM, then APRS (then by downlink).
+- Kept: SatNOGS satellites in orbit, with CelesTrak elements, and an alive, active FM or 1200 baud AFSK transmitter that has an uplink, every frequency inside 144-148 or 430-440 MHz. SSB or linear, CW, data and beacon transmitters are dropped.
+- Joined by NORAD number. Fewer than 5 satellites fails the build (the last published copy stays).
+- Rebuilt every day; the Changes chart counts satellites and transmitters added or removed, not element changes. CelesTrak asks for no more than one fetch per update: once a day is fine.
 
 ## Hosting
 

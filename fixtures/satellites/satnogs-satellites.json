@@ -1,0 +1,32 @@
+[
+ {
+  "norad_cat_id": 7530,
+  "name": "OSCAR 7",
+  "status": "in orbit"
+ },
+ {
+  "norad_cat_id": 25544,
+  "name": "ISS",
+  "status": "in orbit"
+ },
+ {
+  "norad_cat_id": 27607,
+  "name": "SAUDISAT 1C",
+  "status": "in orbit"
+ },
+ {
+  "norad_cat_id": 40908,
+  "name": "LILACSAT 2",
+  "status": "in orbit"
+ },
+ {
+  "norad_cat_id": 40967,
+  "name": "FOX-1A",
+  "status": "in orbit"
+ },
+ {
+  "norad_cat_id": 63213,
+  "name": "TEVEL2-4",
+  "status": "in orbit"
+ }
+]

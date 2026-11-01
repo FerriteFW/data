@@ -1,6 +1,6 @@
 """Build every source into out/: per-source tiles and index.json, a top-level index.json, CNAME.
 
-python3 build.py --cache DIR [--out out] [--download] [--force] [--only tafl|fcc|airports|repeaters]
+python3 build.py --cache DIR [--out out] [--download] [--force] [--only tafl|fcc|airports|repeaters|satellites]
 """
 
 import argparse
@@ -20,9 +20,11 @@ import landing
 from airports import build as airports
 from fcc import build as fcc
 from repeaters import build as repeaters
+from satellites import build as satellites
 from tafl import build as tafl
 
-SOURCES = {"tafl": tafl, "fcc": fcc, "airports": airports, "repeaters": repeaters}
+SOURCES = {"tafl": tafl, "fcc": fcc, "airports": airports, "repeaters": repeaters,
+           "satellites": satellites}
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -95,12 +97,13 @@ def tile_texts_zip(data, name):
                 yield z.read(fn).decode("utf-8")
 
 
-def changes(out, name, live):
+def changes(out, name, live, keys=None):
     """Rows added and removed against the published copy ({} when there is none to compare with)."""
     pub = published_zip(live, name)
     if not pub:
         return {}
-    before, now = row_keys(tile_texts_zip(pub[1], name)), row_keys(tile_texts_dir(out, name))
+    keys = keys or row_keys  # a one-file source (satellites) says what counts as a row
+    before, now = keys(tile_texts_zip(pub[1], name)), keys(tile_texts_dir(out, name))
     print(f"{name}: {len(now - before):,} rows added, {len(before - now):,} removed since {pub[0].get('source_date', '?')}",
           flush=True)
     return {"added": len(now - before), "removed": len(before - now)}
@@ -193,8 +196,11 @@ def main():
         built.add(name)
         if "feed" in meta:
             feeds[name] = meta["feed"]
-        index = common.write_source(a.out, name, rows, meta, getattr(SOURCES[name], "LEVEL", 4))
-        feeds.setdefault(name, {}).update(changes(a.out, name, live))
+        if hasattr(SOURCES[name], "write"):  # not tiles: one file
+            index = SOURCES[name].write(a.out, name, rows, meta)
+        else:
+            index = common.write_source(a.out, name, rows, meta, getattr(SOURCES[name], "LEVEL", 4))
+        feeds.setdefault(name, {}).update(changes(a.out, name, live, getattr(SOURCES[name], "row_keys", None)))
         bundle = write_bundle(a.out, name)
         top["sources"].append({k: index[k] for k in (
             "source", "title", "source_date", "licence", "licence_url", "attribution", "rows")}

@@ -6,7 +6,7 @@ python3 check.py out
 import json
 import sys
 
-LEAST = {"tafl": 100000, "fcc": 500000, "airports": 15000, "repeaters": 8000}
+LEAST = {"tafl": 100000, "fcc": 500000, "airports": 15000, "repeaters": 8000, "satellites": 8}
 
 top = json.load(open(f"{sys.argv[1]}/index.json"))
 rows = {s["source"]: s["rows"] for s in top["sources"]}
