@@ -10,7 +10,7 @@ Served at https://data.ferritefw.dev.
 - `airports/`: the world's airport frequencies (108-137 MHz), from OurAirports. Public domain ([airports/LICENCE-DATA.md](airports/LICENCE-DATA.md)).
 - `repeaters/`: the world's operational analog FM amateur repeaters on 2 m, 1.25 m and 70 cm, from HearHam (user-contributed). Free to use in applications, per HearHam.com; no formal data licence ([repeaters/LICENCE-DATA.md](repeaters/LICENCE-DATA.md)).
 - `satellites/`: the amateur satellites a 2 m / 70 cm FM handheld can work: orbit elements from CelesTrak (public data) and transponders from SatNOGS DB. CC BY-SA 4.0, and the derived file is shared the same way ([satellites/LICENCE-DATA.md](satellites/LICENCE-DATA.md)).
-- `airlines/`: Ferrite's own list of airline codes (IATA, ICAO, short name) for the radio's ACARS display; written by hand, nothing downloaded. Licence to be decided ([airlines/LICENCE-DATA.md](airlines/LICENCE-DATA.md)).
+- `airlines/`: Ferrite's own list of airline codes (IATA, ICAO, short name) for the radio's ACARS display; written by hand, nothing downloaded. CC0 1.0, public domain ([airlines/LICENCE-DATA.md](airlines/LICENCE-DATA.md)).
 - `common/`: shared code: bands, name shortening, emission modes, categories, tiles. Tests: `python3 -m unittest`.
 - `build.py`: builds every source into `out/`.
 - `.forgejo/workflows/publish.yml`: the daily build, on Forgejo's runner at home (the FCC refuses GitHub's runners). Force-pushes `out/` to the `gh-pages` branch here.

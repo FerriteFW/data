@@ -1,7 +1,7 @@
 # Airline codes
 
 - Ferrite's own list of airline codes, for the radio's ACARS display: a flight ID like `AC0123` shows as "Air Canada".
-- Written by hand from general knowledge, not copied from any dataset ([LICENCE-DATA.md](LICENCE-DATA.md)).
+- Written by hand, each airline checked on its own, not copied from any dataset. CC0 1.0, public domain ([LICENCE-DATA.md](LICENCE-DATA.md)).
 - Currently operating airlines only. A code we weren't sure of is left out rather than guessed.
 - Shared or left-out codes: [shared-codes.md](shared-codes.md).
 - Wrong or missing airline? Open an issue on FerriteFW/data on GitHub with the codes and a source.

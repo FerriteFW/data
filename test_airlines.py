@@ -27,7 +27,7 @@ class TheList(unittest.TestCase):
         self.assertEqual(air.problems(self.rows), [])
 
     def test_big_enough(self):
-        self.assertGreater(len(self.rows), 450)
+        self.assertGreater(len(self.rows), 660)
 
     def test_known_rows(self):
         by = {r["iata"]: r for r in self.rows}

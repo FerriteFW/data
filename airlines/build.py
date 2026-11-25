@@ -21,9 +21,9 @@ FORMAT = "airlines-1"
 COLUMNS = ["iata", "icao", "name", "country", "note"]
 NOTES = ("", "cargo", "regional")
 NAME_MAX = 24
-LICENCE = "To be decided"
-LICENCE_URL = "https://github.com/FerriteFW/data/blob/main/airlines/LICENCE-DATA.md"
-ATTRIBUTION = "Airline codes compiled by Ferrite (ferritefw.dev) from general knowledge."
+LICENCE = "CC0 1.0 (public domain dedication)"
+LICENCE_URL = "https://creativecommons.org/publicdomain/zero/1.0/"
+ATTRIBUTION = "Airline codes compiled by Ferrite (ferritefw.dev) from general knowledge, each airline checked on its own. CC0 1.0."
 PAGE = "https://github.com/FerriteFW/data/tree/main/airlines"
 
 IATA = re.compile(r"^[A-Z0-9]{2}$")
