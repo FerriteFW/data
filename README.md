@@ -10,6 +10,7 @@ Served at https://data.ferritefw.dev.
 - `airports/`: the world's airport frequencies (108-137 MHz), from OurAirports. Public domain ([airports/LICENCE-DATA.md](airports/LICENCE-DATA.md)).
 - `repeaters/`: the world's operational analog FM amateur repeaters on 2 m, 1.25 m and 70 cm, from HearHam (user-contributed). Free to use in applications, per HearHam.com; no formal data licence ([repeaters/LICENCE-DATA.md](repeaters/LICENCE-DATA.md)).
 - `satellites/`: the amateur satellites a 2 m / 70 cm FM handheld can work: orbit elements from CelesTrak (public data) and transponders from SatNOGS DB. CC BY-SA 4.0, and the derived file is shared the same way ([satellites/LICENCE-DATA.md](satellites/LICENCE-DATA.md)).
+- `airlines/`: Ferrite's own list of airline codes (IATA, ICAO, short name) for the radio's ACARS display; written by hand, nothing downloaded. Licence to be decided ([airlines/LICENCE-DATA.md](airlines/LICENCE-DATA.md)).
 - `common/`: shared code: bands, name shortening, emission modes, categories, tiles. Tests: `python3 -m unittest`.
 - `build.py`: builds every source into `out/`.
 - `.forgejo/workflows/publish.yml`: the daily build, on Forgejo's runner at home (the FCC refuses GitHub's runners). Force-pushes `out/` to the `gh-pages` branch here.
@@ -81,6 +82,12 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 - Kept: SatNOGS satellites in orbit, with CelesTrak elements, and an alive, active FM or 1200 baud AFSK transmitter that has an uplink, every frequency inside 144-148 or 430-440 MHz. SSB or linear, CW, data and beacon transmitters are dropped.
 - Joined by NORAD number. Fewer than 5 satellites fails the build (the last published copy stays).
 - Rebuilt every day; the Changes chart counts satellites and transmitters added or removed, not element changes. CelesTrak asks for no more than one fetch per update: once a day is fine.
+
+## Airlines
+
+- `airlines/index.json` is the usual source index (`rows` is the airline count, `tiles` is `{"airlines.csv": count}`), plus `cargo` and `regional` counts.
+- `airlines/airlines.csv` (`format`: `airlines-1`, about 12 kB), not tiles: columns `iata,icao,name,country,note`, sorted by IATA code; the columns are in [airlines/README.md](airlines/README.md).
+- Built from the checked-in file, never downloaded; `build.py` checks it (codes, order, duplicates, names of 24 ASCII characters at most) and fails on any problem.
 
 ## Hosting
 

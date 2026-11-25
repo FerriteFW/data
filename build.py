@@ -1,6 +1,6 @@
 """Build every source into out/: per-source tiles and index.json, a top-level index.json, CNAME.
 
-python3 build.py --cache DIR [--out out] [--download] [--force] [--only tafl|fcc|airports|repeaters|satellites]
+python3 build.py --cache DIR [--out out] [--download] [--force] [--only tafl|fcc|airports|repeaters|satellites|airlines]
 """
 
 import argparse
@@ -17,6 +17,7 @@ import zipfile
 
 import common
 import landing
+from airlines import build as airlines
 from airports import build as airports
 from fcc import build as fcc
 from repeaters import build as repeaters
@@ -24,7 +25,7 @@ from satellites import build as satellites
 from tafl import build as tafl
 
 SOURCES = {"tafl": tafl, "fcc": fcc, "airports": airports, "repeaters": repeaters,
-           "satellites": satellites}
+           "satellites": satellites, "airlines": airlines}
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -85,7 +86,7 @@ def row_keys(tiles):
 def tile_texts_dir(out, name):
     d = os.path.join(out, name)
     for fn in os.listdir(d):
-        if fn.endswith(".json") and fn != "index.json":
+        if fn.endswith((".json", ".csv")) and fn != "index.json":  # .csv: airlines, one file
             with open(os.path.join(d, fn), encoding="utf-8") as f:
                 yield f.read()
 
@@ -93,7 +94,7 @@ def tile_texts_dir(out, name):
 def tile_texts_zip(data, name):
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         for fn in z.namelist():
-            if fn.startswith(f"{name}/") and fn.endswith(".json") and not fn.endswith("/index.json"):
+            if fn.startswith(f"{name}/") and fn.endswith((".json", ".csv")) and not fn.endswith("/index.json"):
                 yield z.read(fn).decode("utf-8")
 
 
@@ -102,7 +103,7 @@ def changes(out, name, live, keys=None):
     pub = published_zip(live, name)
     if not pub:
         return {}
-    keys = keys or row_keys  # a one-file source (satellites) says what counts as a row
+    keys = keys or row_keys  # a one-file source (satellites, airlines) says what counts as a row
     before, now = keys(tile_texts_zip(pub[1], name)), keys(tile_texts_dir(out, name))
     print(f"{name}: {len(now - before):,} rows added, {len(before - now):,} removed since {pub[0].get('source_date', '?')}",
           flush=True)

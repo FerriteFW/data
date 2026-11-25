@@ -62,6 +62,7 @@ footer{{margin-top:40px;color:var(--mut);font-size:14px}}
 <li><code>&lt;source&gt;/index.json</code>: one source's tiles and their row counts, plus <code>format</code> and <code>level</code>.</li>
 <li>Tiles are Maidenhead grid locators: 4-character squares such as <code>tafl/CN89.json</code> (2&deg; by 1&deg;). A busy square (over 6,000 rows: big cities) comes as its 6-character subsquares instead (<code>tafl/CN89kg.json</code>), listed under <code>split</code>. Airports and repeaters use 2-character fields (<code>airports/CN.json</code>, 20&deg; by 10&deg;).</li>
 <li><code>satellites/sats.json</code>: not tiles, one small file: each satellite's orbit elements and FM or APRS transponders (<code>satellites-1</code>, in the repository's README).</li>
+<li><code>airlines/airlines.csv</code>: not tiles, one small file: airline codes (IATA, ICAO) and short names, for ACARS flight IDs (<code>airlines-1</code>, in the repository's README).</li>
 <li><code>&lt;source&gt;.zip</code>: the whole source in one download, for keeping it offline.</li>
 <li><code>stats.csv</code>: a line per source each time it's built (row count, rows added and removed, and for repeaters HearHam's own counts), kept from build to build.</li>
 <li>Tiles are columnar JSON (<code>columnar-1</code>): names once, then whole-number differences for position and frequency. The format is in the <a href="https://github.com/FerriteFW/data#output">repository's README</a>.</li>
@@ -84,7 +85,8 @@ footer{{margin-top:40px;color:var(--mut);font-size:14px}}
 
 SHORT = {"tafl": "Canada: licensed sites (ISED TAFL)", "fcc": "US: licensed sites (FCC ULS)", "airports": "World: airport frequencies (OurAirports)",
          "repeaters": "World: amateur repeaters (HearHam)",
-         "satellites": "World: amateur FM satellites (CelesTrak, SatNOGS)"}
+         "satellites": "World: amateur FM satellites (CelesTrak, SatNOGS)",
+         "airlines": "World: airline codes (Ferrite)"}
 
 
 W, TOP, H, GAP, BARS = 320, 14, 56, 10, 34  # width, label strip, rows chart, gap, changes chart (SVG units)
