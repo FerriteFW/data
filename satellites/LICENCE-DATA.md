@@ -1,7 +1,8 @@
 # Satellite data licence
 
 - Orbits: CelesTrak's GP element sets for the amateur group, https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur (public data, from the 18th Space Defense Squadron's catalogue). We credit CelesTrak and fetch once a day.
-- Transponders and status: SatNOGS DB, https://db.satnogs.org (API: `/api/transmitters/` and `/api/satellites/`).
+- Transponders and status: SatNOGS DB, https://db.satnogs.org (API: `/api/transmitters/` and `/api/satellites/`; `/api/tle/` for the latest TLE of a curated satellite CelesTrak's amateur group lacks).
+- Curated frequencies: facts (frequencies, tones, modes) read from AMSAT's frequency pages (live FM, digipeater, image-transmitting and upcoming satellites), https://www.amsat.org/live-fm-satellites/; no text copied. Some satellites are left out because AMSAT doesn't list them as working.
   - Licence: Creative Commons Attribution-ShareAlike 4.0 International, https://creativecommons.org/licenses/by-sa/4.0/.
   - Listed on our index as: CC BY-SA 4.0 (SatNOGS DB transponders); CelesTrak elements are public data.
 - Credit:
