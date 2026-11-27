@@ -9,7 +9,7 @@ Served at https://data.ferritefw.dev.
 - `fcc/`: US, from the FCC's ULS weekly files (Land Mobile – Private and Commercial). Public domain in the US ([fcc/LICENCE-DATA.md](fcc/LICENCE-DATA.md)).
 - `airports/`: the world's airport frequencies (108-137 MHz), from OurAirports. Public domain ([airports/LICENCE-DATA.md](airports/LICENCE-DATA.md)).
 - `repeaters/`: the world's operational analog FM amateur repeaters on 2 m, 1.25 m and 70 cm, from HearHam (user-contributed). Free to use in applications, per HearHam.com; no formal data licence ([repeaters/LICENCE-DATA.md](repeaters/LICENCE-DATA.md)).
-- `satellites/`: the amateur satellites a 2 m / 70 cm FM handheld can work: orbit elements from CelesTrak (public data) and transponders from SatNOGS DB. CC BY-SA 4.0, and the derived file is shared the same way ([satellites/LICENCE-DATA.md](satellites/LICENCE-DATA.md)).
+- `satellites/`: the amateur satellites a 2 m / 70 cm FM handheld can work or listen to: orbit elements from CelesTrak (public data, else SatNOGS DB's latest TLE), transponders from SatNOGS DB, and a short curated table of frequencies from AMSAT's pages. CC BY-SA 4.0, and the derived file is shared the same way ([satellites/LICENCE-DATA.md](satellites/LICENCE-DATA.md)).
 - `airlines/`: Ferrite's own list of airline codes (IATA, ICAO, short name) for the radio's ACARS display; written by hand, nothing downloaded. CC0 1.0, public domain ([airlines/LICENCE-DATA.md](airlines/LICENCE-DATA.md)).
 - `fixed/`: Ferrite's own sets of well-known channels per radio region (calling frequencies, licence-free services, marine, weather), from regulators' rules and national band plans; written by hand, nothing downloaded. CC0 1.0, public domain ([fixed/LICENCE-DATA.md](fixed/LICENCE-DATA.md)).
 - `common/`: shared code: bands, name shortening, emission modes, categories, tiles. Tests: `python3 -m unittest`.
@@ -73,14 +73,18 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 
 - `satellites/index.json` is the usual source index (`rows` is the satellite count, `tiles` is `{"sats.json": count}`), plus `newest_epoch` and `oldest_epoch`.
 - `satellites/sats.json` (`format`: `satellites-1`, about 15 kB), not tiles:
-  - `built` (date), `licence`, `attribution`, `newest_epoch`, `oldest_epoch` (the elements' ISO epochs, UTC), and `satellites`, ordered by NORAD number.
+  - `built` (date), `licence`, `attribution`, `newest_epoch`, `oldest_epoch` (the elements' ISO epochs, UTC), and `satellites`: the two-way ones (a transmitter with an uplink) first, then those only to listen to, each by NORAD number.
   - A satellite: `id` (NORAD catalogue number), `name` (CelesTrak's), `short` (16 characters at most: the alias in parentheses, `AO-7`, else the name), `status`, `tle` (two lines, 69 characters, made from the elements), `elements`, `transmitters`.
   - `status`: `active` (SatNOGS: in orbit with an alive transmitter we keep), `unknown` (its elements are over 30 days older than the newest: probably silent), `inactive` (reserved: dead and re-entered satellites are left out).
   - `elements` (CelesTrak's OMM, for SGP4): `epoch`, `n` (revs per day), `e`, `i`, `raan`, `w` (argument of perigee), `m` (mean anomaly; angles in degrees), `bstar`, `ndot`, `nddot`, `rev` (at epoch).
   - A transmitter: `desc` (SatNOGS's), `mode` (`FM`: voice repeater or transponder; `APRS`: 1200 baud AFSK digipeater), `up` and `down` (`[low, high]` in Hz; equal for a single channel), `tone` (the uplink CTCSS in Hz as text, `"67.0"`, read from the description; null when it names none), `invert` (SatNOGS's flag).
   - `arm_tone` (optional, FM only): the CTCSS tone in Hz as text (`"74.4"`) to send for about 2 s on the first key-up of a pass, before `tone`, to arm the transponder. Missing when it needs none: only SO-50 has one. From a small curated table in `satellites/build.py` (AMSAT's published tones), which may also fill a `tone` SatNOGS lacks. Readers of `satellites-1` that don't know it ignore it.
-  - All of a satellite's working transmitters are listed, most useful first: FM voice with a tone, other FM, then APRS (then by downlink).
+  - `up` is null for a receive-only transmitter (an FM or SSTV downlink to listen to; curated). Readers that can't transmit on it treat it as a beacon.
+  - All of a satellite's working transmitters are listed, most useful first: FM voice with a tone, other FM, FM to listen to, then APRS (then by downlink).
 - Kept: SatNOGS satellites in orbit, with CelesTrak elements, and an alive, active FM or 1200 baud AFSK transmitter that has an uplink, every frequency inside 144-148 or 430-440 MHz. SSB or linear, CW, data and beacon transmitters are dropped.
+- Curated (`CURATED` in `satellites/build.py`, from AMSAT's live FM, digipeater, image and upcoming pages): satellites and transmitters SatNOGS lacks or the rule above drops, such as SO-131, RS95S and the SSTV satellites. A transmitter with `"up": null` is receive only (an FM or SSTV downlink to listen to); Console makes it a beacon the radio never transmits on. A curated satellite without CelesTrak elements uses SatNOGS DB's latest TLE when it's under 14 days old (`tle` then keeps its own lines, Alpha-5 numbers included).
+- Left out (`SKIP`): satellites AMSAT doesn't list as working (AO-27, HOPE-1) and TEVEL2 (its owner reports unreliable transponders).
+- The radio holds 32 satellites; Console 0.9.8 writes the file's first 32, so the two-way satellites come first and listening can't push one out. More two-way satellites than 32 fails the build. Console will let you pick (0.9.9).
 - Joined by NORAD number. Fewer than 5 satellites fails the build (the last published copy stays).
 - Rebuilt every day; the Changes chart counts satellites and transmitters added or removed, not element changes. CelesTrak asks for no more than one fetch per update: once a day is fine.
 
