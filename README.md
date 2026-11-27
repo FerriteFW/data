@@ -11,6 +11,7 @@ Served at https://data.ferritefw.dev.
 - `repeaters/`: the world's operational analog FM amateur repeaters on 2 m, 1.25 m and 70 cm, from HearHam (user-contributed). Free to use in applications, per HearHam.com; no formal data licence ([repeaters/LICENCE-DATA.md](repeaters/LICENCE-DATA.md)).
 - `satellites/`: the amateur satellites a 2 m / 70 cm FM handheld can work: orbit elements from CelesTrak (public data) and transponders from SatNOGS DB. CC BY-SA 4.0, and the derived file is shared the same way ([satellites/LICENCE-DATA.md](satellites/LICENCE-DATA.md)).
 - `airlines/`: Ferrite's own list of airline codes (IATA, ICAO, short name) for the radio's ACARS display; written by hand, nothing downloaded. CC0 1.0, public domain ([airlines/LICENCE-DATA.md](airlines/LICENCE-DATA.md)).
+- `fixed/`: Ferrite's own sets of well-known channels per radio region (calling frequencies, licence-free services, marine, weather), from regulators' rules and national band plans; written by hand, nothing downloaded. CC0 1.0, public domain ([fixed/LICENCE-DATA.md](fixed/LICENCE-DATA.md)).
 - `common/`: shared code: bands, name shortening, emission modes, categories, tiles. Tests: `python3 -m unittest`.
 - `build.py`: builds every source into `out/`.
 - `.forgejo/workflows/publish.yml`: the daily build, on Forgejo's runner at home (the FCC refuses GitHub's runners). Force-pushes `out/` to the `gh-pages` branch here.
@@ -88,6 +89,13 @@ python3 build.py --cache ~/ferrite-data-cache --only tafl
 - `airlines/index.json` is the usual source index (`rows` is the airline count, `tiles` is `{"airlines.csv": count}`), plus `cargo` and `regional` counts.
 - `airlines/airlines.csv` (`format`: `airlines-1`, about 12 kB), not tiles: columns `iata,icao,name,country,note`, sorted by IATA code; the columns are in [airlines/README.md](airlines/README.md).
 - Built from the checked-in file, never downloaded; `build.py` checks it (codes, order, duplicates, names of 24 ASCII characters at most) and fails on any problem.
+
+## Fixed sets
+
+- `fixed/index.json` is the usual source index (`rows` is the set count, `tiles` is `{"US.json": sets, ...}`), plus `frequencies` and `regions` (per region: `file`, `name`, `sets`, `frequencies`, `splits`).
+- `fixed/<REGION>.json` (`format`: `fixed-1`), one per radio region: `US`, `CA`, `UK`, `EU`, `AU`, `NZ`, `JP`, `OTHER` (the same everywhere: international marine, aviation emergency, satellites; offered beside every region). Each is the checked-in region file plus `format`, `built`, `licence` and `attribution`; the keys are in [fixed/README.md](fixed/README.md).
+- Corrections come in through an issue form ([suggest one](https://github.com/FerriteFW/data/issues/new?template=fixed-set.yml)); `fixed/index.json`'s `corrections` is its link.
+- Built from the checked-in files, never downloaded; `build.py` checks them (keys, ids, names of 16 ASCII characters at most, frequencies the radio tunes, a source for every set) and fails on any problem.
 
 ## Hosting
 

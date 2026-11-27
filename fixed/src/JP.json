@@ -1,0 +1,34 @@
+{
+  "region": "JP",
+  "name": "Japan",
+  "sets": [
+    {
+      "id": "jp-amateur-call",
+      "name": "JA calling",
+      "displayName": "Amateur calling and emergency frequencies (Japan)",
+      "description": "JARL/MIC calling, digital calling and emergency frequencies on 50, 144, 430 and 1200 MHz; amateur licence required.",
+      "category": "amateur",
+      "defaultPower": "Mid",
+      "defaultBandwidth": "25kHz",
+      "defaultMode": "Analog",
+      "rxOnly": false,
+      "source": [
+        {"title": "JARL, Amateur band plan", "url": "https://www.jarl.org/Japanese/A_Shiryo/A-3_Band_Plan/bandplan20250717.pdf", "date": "in force 17 Jul 2025; read 2026-11-26"},
+        {"title": "MIC, amateur frequency usage classification (MIC Notice No. 80 of 2023) and Tokai bureau notes on calling frequencies", "url": "https://www.soumu.go.jp/soutsu/tokai/denpa/siyoukubetu/index.html", "date": "notice of 22 Mar 2023, effective 25 Sep 2023; read 2026-11-26"}
+      ],
+      "frequencies": [
+        {"name": "51.000 Call", "rx": 51.0, "tx": 51.0, "note": "50 MHz calling and emergency"},
+        {"name": "51.500 Emerg", "rx": 51.5, "tx": 51.5, "note": "Emergency communications"},
+        {"name": "145.000 Call", "rx": 145.0, "tx": 145.0, "note": "Calling and emergency; FM only"},
+        {"name": "145.300 DigCall", "rx": 145.3, "tx": 145.3, "note": "Digital calling; FM also allowed"},
+        {"name": "145.500 Emerg", "rx": 145.5, "tx": 145.5, "note": "Emergency communications"},
+        {"name": "433.000 Call", "rx": 433.0, "tx": 433.0, "note": "Calling and emergency; FM only"},
+        {"name": "433.300 DigCall", "rx": 433.3, "tx": 433.3, "note": "Digital calling; FM also allowed"},
+        {"name": "433.500 Emerg", "rx": 433.5, "tx": 433.5, "note": "Emergency communications"},
+        {"name": "1295.000 Call", "rx": 1295.0, "tx": 1295.0, "note": "1200 MHz calling and emergency"}
+      ]
+    }
+  ],
+  "splits": [
+  ]
+}

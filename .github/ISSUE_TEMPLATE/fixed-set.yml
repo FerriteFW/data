@@ -1,0 +1,66 @@
+name: Fixed sets correction
+description: A wrong or missing channel, a missing set, or a country that does things differently, in Console's Fixed sets.
+title: "Fixed sets: "
+labels: [fixed sets]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping. The sets are at https://data.ferritefw.dev (one file per region, under `fixed/`). Every channel has to come from a published source (a regulator's rules or a national society's band plan), so a link to one is the most useful thing you can give us. Local knowledge is welcome too: say how you know.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of change
+      options:
+        - A channel is wrong (frequency, name, tone, offset)
+        - A channel is missing
+        - A whole set is missing
+        - My country does it differently
+        - A set shouldn't be there
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: region
+    attributes:
+      label: Region
+      description: The radio's region (US, CA, UK, EU, AU, NZ, JP or OTHER). Console fills this in.
+      placeholder: CA
+    validations:
+      required: true
+  - type: input
+    id: set
+    attributes:
+      label: Set
+      description: The set's id or name as Console shows it, if it's about one set. Console fills this in.
+      placeholder: ca-2m-simplex
+  - type: input
+    id: country
+    attributes:
+      label: Country or area
+      description: Where this applies, if only part of the region (a country, a province or state).
+      placeholder: Germany
+  - type: textarea
+    id: what
+    attributes:
+      label: The change
+      description: What's there now and what it should be. For channels, list frequency (MHz), name, and tone or offset if any.
+      placeholder: |
+        Add 446.000 MHz "70cm Call", simplex, no tone.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: A link to the regulator's rule or the band plan (with its date or edition), or how you know.
+      placeholder: https://...
+    validations:
+      required: true
+  - type: checkboxes
+    id: facts
+    attributes:
+      label: Facts only
+      options:
+        - label: I'm giving frequencies and channel numbers, not copied text or tables (the sets are public domain, CC0).
+          required: true
