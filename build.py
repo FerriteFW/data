@@ -1,6 +1,6 @@
 """Build every source into out/: per-source tiles and index.json, a top-level index.json, CNAME.
 
-python3 build.py --cache DIR [--out out] [--download] [--force] [--only tafl|fcc|airports|repeaters|satellites|airlines]
+python3 build.py --cache DIR [--out out] [--download] [--force] [--only tafl|fcc|airports|repeaters|satellites|airlines|fixed]
 """
 
 import argparse
@@ -20,12 +20,13 @@ import landing
 from airlines import build as airlines
 from airports import build as airports
 from fcc import build as fcc
+from fixed import build as fixed
 from repeaters import build as repeaters
 from satellites import build as satellites
 from tafl import build as tafl
 
 SOURCES = {"tafl": tafl, "fcc": fcc, "airports": airports, "repeaters": repeaters,
-           "satellites": satellites, "airlines": airlines}
+           "satellites": satellites, "airlines": airlines, "fixed": fixed}
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -86,7 +87,7 @@ def row_keys(tiles):
 def tile_texts_dir(out, name):
     d = os.path.join(out, name)
     for fn in os.listdir(d):
-        if fn.endswith((".json", ".csv")) and fn != "index.json":  # .csv: airlines, one file
+        if fn.endswith((".json", ".csv")) and fn != "index.json":  # .csv: airlines; .json: also fixed's region files
             with open(os.path.join(d, fn), encoding="utf-8") as f:
                 yield f.read()
 

@@ -8,9 +8,11 @@ import os
 import sys
 
 from airlines import build as airlines
+from fixed import build as fixed
 
 # airlines: the hand-written list (517 rows at its start); fewer than this means a truncated file.
-LEAST = {"tafl": 100000, "fcc": 500000, "airports": 15000, "repeaters": 8000, "satellites": 8, "airlines": 660}
+LEAST = {"tafl": 100000, "fcc": 500000, "airports": 15000, "repeaters": 8000, "satellites": 8, "airlines": 660,
+         "fixed": 50}  # fixed: sets (73 at its start)
 
 top = json.load(open(f"{sys.argv[1]}/index.json"))
 rows = {s["source"]: s["rows"] for s in top["sources"]}
@@ -24,3 +26,13 @@ if "airlines" in rows:
     bad = airlines.problems(published)
     assert not bad, f"airlines: {len(bad)} problems: {bad[:5]}"
     assert len(published) == rows["airlines"], "airlines: the index and the file disagree"
+if "fixed" in rows:
+    # Every region there, each file in the format, the index's count right.
+    published = [json.load(open(os.path.join(sys.argv[1], "fixed", f"{r}.json"))) for r in fixed.REGIONS]
+    for d in published:
+        assert d.pop("format") == fixed.FORMAT, f"fixed {d['region']}: wrong format"
+        for k in ("built", "licence", "attribution"):
+            d.pop(k)
+    bad = fixed.problems(published)
+    assert not bad, f"fixed: {len(bad)} problems: {bad[:5]}"
+    assert sum(len(d["sets"]) for d in published) == rows["fixed"], "fixed: the index and the files disagree"

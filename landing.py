@@ -63,6 +63,7 @@ footer{{margin-top:40px;color:var(--mut);font-size:14px}}
 <li>Tiles are Maidenhead grid locators: 4-character squares such as <code>tafl/CN89.json</code> (2&deg; by 1&deg;). A busy square (over 6,000 rows: big cities) comes as its 6-character subsquares instead (<code>tafl/CN89kg.json</code>), listed under <code>split</code>. Airports and repeaters use 2-character fields (<code>airports/CN.json</code>, 20&deg; by 10&deg;).</li>
 <li><code>satellites/sats.json</code>: not tiles, one small file: each satellite's orbit elements and FM or APRS transponders (<code>satellites-1</code>, in the repository's README).</li>
 <li><code>airlines/airlines.csv</code>: not tiles, one small file: airline codes (IATA, ICAO) and short names, for ACARS flight IDs (<code>airlines-1</code>, in the repository's README).</li>
+<li><code>fixed/&lt;REGION&gt;.json</code>: not tiles, one small file per radio region (US, CA, UK, EU, AU, NZ, JP, OTHER): well-known channels such as calling frequencies, licence-free services, marine and weather, each set with its sources (<code>fixed-1</code>, in the repository's README). Know a channel that's wrong or missing? <a href="https://github.com/FerriteFW/data/issues/new?template=fixed-set.yml">Suggest a correction</a>.</li>
 <li><code>&lt;source&gt;.zip</code>: the whole source in one download, for keeping it offline.</li>
 <li><code>stats.csv</code>: a line per source each time it's built (row count, rows added and removed, and for repeaters HearHam's own counts), kept from build to build.</li>
 <li>Tiles are columnar JSON (<code>columnar-1</code>): names once, then whole-number differences for position and frequency. The format is in the <a href="https://github.com/FerriteFW/data#output">repository's README</a>.</li>
@@ -86,7 +87,8 @@ footer{{margin-top:40px;color:var(--mut);font-size:14px}}
 SHORT = {"tafl": "Canada: licensed sites (ISED TAFL)", "fcc": "US: licensed sites (FCC ULS)", "airports": "World: airport frequencies (OurAirports)",
          "repeaters": "World: amateur repeaters (HearHam)",
          "satellites": "World: amateur FM satellites (CelesTrak, SatNOGS)",
-         "airlines": "World: airline codes (Ferrite)"}
+         "airlines": "World: airline codes (Ferrite)",
+         "fixed": "World: fixed channel sets by region (Ferrite)"}
 
 
 W, TOP, H, GAP, BARS = 320, 14, 56, 10, 34  # width, label strip, rows chart, gap, changes chart (SVG units)
